@@ -5,19 +5,19 @@
 #define SHOW_TEXTTOOL_WIN 'sttw'
 #define HIDE_ALL_WIN	'hdal'
 
-#define  MENU_HSV 'mhsv'
+//#define  MENU_HSV 'mhsv'
 #define  MENU_SELECT_ALL 'msla'
 #define  MENU_SELECT_RANGE 'slrn'
 
-#define  MENU_ROTATE_180 'r180'
-#define  MENU_ROTATE_FREE 'rfre'
-#define  MENU_ROTATE_PLUS_90 'r90p'
-#define  MENU_ROTATE_MINUS_90 'r90m'
+//#define  MENU_ROTATE_180 'r180'
+//#define  MENU_ROTATE_FREE 'rfre'
+//#define  MENU_ROTATE_PLUS_90 'r90p'
+//#define  MENU_ROTATE_MINUS_90 'r90m'
 #define  MENU_SYMETRY_H  'symh'
 #define  MENU_SYMETRY_V  'symv'
 
 #define MENU_PREFS 		'mnpr'
-#define  MENU_LIMIT_LEVELS  'ltlv'
+//#define  MENU_LIMIT_LEVELS  'ltlv'
 
 BPMWindow::BPMWindow(BRect frame, share *sh)
 				: BWindow(frame, "      ", B_DOCUMENT_WINDOW, B_WILL_DRAW | B_ASYNCHRONOUS_CONTROLS)
@@ -83,33 +83,28 @@ rgWindow_visible = false;
 	a_menu->AddSeparatorItem();
 */
 	
-	a_menu->AddItem(new BMenuItem(Language.get("ZOOM_IN"),   new BMessage(ZOOM_IN),  '+',B_COMMAND_KEY));
-	a_menu->AddItem(new BMenuItem(Language.get("ZOOM_OUT"),  new BMessage(ZOOM_OUT), '-',B_COMMAND_KEY));
-	a_menu->AddSeparatorItem();
-
-
 	a_menu->AddItem(mask_item = new BMenuItem(Language.get("PURGE_UNDO"),   new BMessage(EDIT_PURGE_UNDO)));
-	a_menu->AddItem(mask_item = new BMenuItem(Language.get("PICK_BRUSH"),   new BMessage(PICK_BRUSH_SELECT),'b',B_COMMAND_KEY | B_SHIFT_KEY));
-	a_menu->AddItem(mask_item = new BMenuItem(Language.get("USE_AS_PAPER"),   new BMessage(USE_SEL_AS_PAPER)));
+//	a_menu->AddItem(mask_item = new BMenuItem(Language.get("PICK_BRUSH"),   new BMessage(PICK_BRUSH_SELECT),'b',B_COMMAND_KEY | B_SHIFT_KEY));
+//	a_menu->AddItem(mask_item = new BMenuItem(Language.get("USE_AS_PAPER"),   new BMessage(USE_SEL_AS_PAPER)));
 	shared->menubar->AddItem(a_menu);
 
 	
 	a_menu = new BMenu(Language.get("IMAGE"));
-	a_menu->AddItem(new BMenuItem(Language.get("CURVES"), new BMessage(MENU_CURVES),'M',B_COMMAND_KEY));
-	a_menu->AddItem(new BMenuItem(Language.get("HSV"), new BMessage(MENU_HSV),'U',B_COMMAND_KEY));
+//	a_menu->AddItem(new BMenuItem(Language.get("CURVES"), new BMessage(MENU_CURVES),'M',B_COMMAND_KEY));
+//	a_menu->AddItem(new BMenuItem(Language.get("HSV"), new BMessage(MENU_HSV),'U',B_COMMAND_KEY));
 	a_menu->AddItem(new BMenuItem(Language.get("INVERT"), new BMessage(MENU_INVERT),'I',B_COMMAND_KEY));
-	a_menu->AddItem(new BMenuItem(Language.get("LIMIT_LEVELS"), new BMessage(MENU_LIMIT_LEVELS)));
+//	a_menu->AddItem(new BMenuItem(Language.get("LIMIT_LEVELS"), new BMessage(MENU_LIMIT_LEVELS)));
 	a_menu->AddSeparatorItem();
 	a_menu->AddItem(new BMenuItem(Language.get("CROP"), new BMessage(MENU_CROP)));
 	a_menu->AddItem(new BMenuItem(Language.get("CANVAS_SIZE"), new BMessage(MENU_CANVAS)));
 	a_menu->AddItem(new BMenuItem(Language.get("RESIZE_IMAGE"), new BMessage(MENU_RESIZE)));
 	
 	BMenu *sub_rotate = new BMenu(Language.get("ROTATION_SYMETRY"));
-	sub_rotate->AddItem(new BMenuItem(Language.get("ROTATE_180"), new BMessage(MENU_ROTATE_180)));
-	sub_rotate->AddItem(new BMenuItem(Language.get("ROTATE_PLUS_90"), new BMessage(MENU_ROTATE_PLUS_90)));
-	sub_rotate->AddItem(new BMenuItem(Language.get("ROTATE_MINUS_90"), new BMessage(MENU_ROTATE_MINUS_90)));
-	sub_rotate->AddItem(new BMenuItem(Language.get("ROTATE_FREE"), new BMessage(MENU_ROTATE_FREE)));
-	sub_rotate->AddSeparatorItem();
+//	sub_rotate->AddItem(new BMenuItem(Language.get("ROTATE_180"), new BMessage(MENU_ROTATE_180)));
+//	sub_rotate->AddItem(new BMenuItem(Language.get("ROTATE_PLUS_90"), new BMessage(MENU_ROTATE_PLUS_90)));
+//	sub_rotate->AddItem(new BMenuItem(Language.get("ROTATE_MINUS_90"), new BMessage(MENU_ROTATE_MINUS_90)));
+//	sub_rotate->AddItem(new BMenuItem(Language.get("ROTATE_FREE"), new BMessage(MENU_ROTATE_FREE)));
+//	sub_rotate->AddSeparatorItem();
 	sub_rotate->AddItem(new BMenuItem(Language.get("HORIZONTAL_SYMETRY"), new BMessage(MENU_SYMETRY_H)));
 	sub_rotate->AddItem(new BMenuItem(Language.get("VERTICAL_SYMETRY"), new BMessage(MENU_SYMETRY_V)));
 	a_menu->AddItem(sub_rotate);
@@ -159,11 +154,14 @@ rgWindow_visible = false;
 					new BMessage(SHOW_NAVIGATION_WIN),'6',B_COMMAND_KEY ));
 	shared->display_menu->AddItem(new BMenuItem(Language.get("TOOLS"),
 					new BMessage(SHOW_TOOL_WIN),'7',B_COMMAND_KEY ));
-	shared->display_menu->AddItem(new BMenuItem("Text Tool",
-					new BMessage(SHOW_TEXTTOOL_WIN),'8',B_COMMAND_KEY ));
 	shared->display_menu->AddSeparatorItem();
 	shared->display_menu->AddItem(new BMenuItem(Language.get("HIDE_ALL"),
 					new BMessage(HIDE_ALL_WIN),'H',B_COMMAND_KEY | B_SHIFT_KEY ));
+	shared->display_menu->AddSeparatorItem();
+	shared->display_menu->AddItem(new BMenuItem(Language.get("ZOOM_IN"),   
+					new BMessage(ZOOM_IN),  '+',B_COMMAND_KEY));
+	shared->display_menu->AddItem(new BMenuItem(Language.get("ZOOM_OUT"),  
+					new BMessage(ZOOM_OUT), '-',B_COMMAND_KEY));
 	shared->menubar->AddItem(shared->display_menu);
 
 	// Dynamically created menu to pick which image is currently active
@@ -247,6 +245,7 @@ BPMWindow::~BPMWindow()
 	if (ThePrefs.option_win_open 	 == true)	{ opWindow->Lock();	opWindow->Close(); }
 	if (ThePrefs.tool_win_open	 	 == true)	{ tlWindow->Lock();	tlWindow->Close(); }
 	if (ThePrefs.navigation_win_open == true)	{ nvWindow->Lock();	nvWindow->Close(); }
+	if (ThePrefs.texttool_win_open	 == true)	{ ttWindow->Lock();	ttWindow->Close(); }
 }
 
 bool BPMWindow::QuitRequested()
@@ -297,7 +296,6 @@ switch (msg->what)
 			case CURSOR_OF_ACTIVE_TOOL:
 				//SetPointerForActiveTool();
 				break;
-				 
 		}
 				
 		shared->active_cursor_id = number;
@@ -349,10 +347,6 @@ switch (msg->what)
 		break;
 
 	
-	case B_REFS_RECEIVED:
-		beep();
-		break; 
-	
 	case MENU_EDIT_CUT:
 		beep();
 		break;
@@ -387,23 +381,28 @@ switch (msg->what)
 	case MENU_CLOSE:
 		if (ThePrefs.no_pictures_left==OFF)
 		{
-			alert = new BAlert("",Language.get("MODIFIED_SAVE"), Language.get("CANCEL"),Language.get("NO"), Language.get("YES"),
+			if(shared->is_modified[shared->active_image])
+			{
+				alert = new BAlert("",Language.get("MODIFIED_SAVE"), Language.get("CANCEL"),Language.get("NO"), Language.get("YES"),
 						   B_WIDTH_FROM_WIDEST,B_WARNING_ALERT); 
-			int32 button_index_aaa;
+				int32 button_index_aaa;
    
-			switch(button_index_aaa = alert->Go())
-   			{
-   				case 0:
-   					break;
+				switch(button_index_aaa = alert->Go())
+   				{
+   					case 0:
+   						break;
    					
-   				case 1:	
-					shared->DeleteImage(shared->active_image);
-   					break;
+	   				case 1:	
+						shared->DeleteImage(shared->active_image);
+   						break;
 					
-				case 2:   
-					PostMessage(MENU_SAVE);
-					break;
+					case 2:   
+						PostMessage(MENU_SAVE);
+						break;
+				}
 			}
+			else
+				shared->DeleteImage(shared->active_image);
 		}
 		break;
 	
@@ -470,15 +469,15 @@ switch (msg->what)
 		}
 		break;
 
-	case MENU_HSV:
+/*	case MENU_HSV:
 		inside_view->Filter_SlideHSV();
 		break;
-		
+*/		
 	case MENU_INVERT:
 		inside_view->Filter_Invert();
 		break;
 		
-		
+/*		
 	case MENU_LIMIT_LEVELS:
 		inside_view->PrepareFilter();
 		if (ThePrefs.limit_levels_open==false)
@@ -493,7 +492,7 @@ switch (msg->what)
 		inside_view->Filter_LimitLevels(uint8(number));
 		PostMessage(UPDATE_ME);
 		break;
-		
+*/		
 	case APPLY_FILTER:
 		inside_view->FilteringDone();
 		break;
@@ -517,28 +516,27 @@ switch (msg->what)
 		}
 		break;
 		
-
 	case MENU_CROP:
 		inside_view->CropSelected();
 		break; 
 		
-	case PICK_BRUSH_SELECT:
+/*	case PICK_BRUSH_SELECT:
 		shared->previous_tool = shared->active_tool;
 		shared->active_tool   = PICK_BRUSH;
 		util.mainWin->PostMessage(TOOL_CHANGED);
 		break;
-
+*/
 	case USE_SEL_AS_PAPER:
-		r =	shared->FindSelectedRect();
+/*		r =	shared->FindSelectedRect();
    		shared->paper_24 = util.GrabRect(r,  shared->act_img->undo_bitmap); 
 	   	shared->UseAsPaper(shared->paper_24);
-   		break;
+*/   		break;
 
 	case MENU_CANVAS:
    	  	inside_view->ResizeCanvas(32,64,100,200);
 		break;
 
-	case MENU_ROTATE_180:    
+/*	case MENU_ROTATE_180:    
 		inside_view->Filter_Rotate180();   
 		break;
 		
@@ -551,7 +549,7 @@ switch (msg->what)
 	case MENU_ROTATE_FREE:
 		util.NotImplemented();
 		break;
-		
+*/		
 	case MENU_SYMETRY_H:  
 		inside_view->Filter_FlipHori();
 		break;
@@ -581,7 +579,6 @@ switch (msg->what)
 		}
   	  	break;
    
-
 	case DRAW_ME:
 	  	if (  msg->FindRect("zone", &to_update)!=B_OK) //Si pas de paramètres on update la full
  	  	{
@@ -593,8 +590,6 @@ switch (msg->what)
 	  	//inside_view->Draw(Bounds());
 		break;
 		 
-	
-
 	case PIC_CREATED:
     	//values inverted by default
 		inside_view->zone_to_update.top    = shared->act_img->pix_per_row-1;
@@ -673,11 +668,11 @@ switch (msg->what)
 		shared->act_img->PurgeUndo();
 		break;
 		
-	case MENU_CURVES:
+/*	case MENU_CURVES:
 		curv_win = new CurveWindow(BRect(100,100,100+204,100+100),shared);
 		curv_win->Show();
 		break;
-
+*/
 	case MENU_SELECT_ALL:
 		shared->act_img->FillMask(); //memorize old mask if undo ON
 		shared->act_img->UpdateDisplayImg(Bounds());
@@ -841,6 +836,51 @@ switch (msg->what)
 		}
 		break;
 
+	case RENDER_TEXT:
+		if(ThePrefs.no_pictures_left==OFF)
+		{
+			// Can't just post to the layer window - it might not exist
+			// because it might not be open - doesn't do much good
+			// to post a message into a vacuum
+			
+/*			shared->act_img->CreateNewLayer(ttWindow->containerview->textedit->Text());
+			shared->act_lay = shared->act_img->the_layers[shared->act_img->active_layer];
+			shared->initLayer();
+			if(ThePrefs.layer_selector_open==true)
+				lyWindow->pr_br_view->AddLayers();
+		
+			msg_a = new BMessage(DRAW_LAYERS);
+			msg_a->AddInt32("active", shared->act_img->active_layer);	
+			util.layerWin->PostMessage(msg_a);
+*/
+			// Save undo before we mess with things
+/*			if (ThePrefs.mask_mode == OFF)
+				shared->act_img->MemorizeUndo (font_update_rect,FORE_COLOR);
+    		else
+    			shared->act_img->MemorizeUndo(font_update_rect,MASK_FORE_COLOR);       
+*/
+			// Need to track down the BBitmap constructor call for the
+			// creating the display bitmap so that it can be set to accept
+			// child views
+
+/*			// virtual view needed to draw string onto the bitmap
+			BView *virtualview;
+			shared->act_img->display_bitmap->Lock();
+			virtualview = new BView(shared->act_img->display_bitmap->Bounds(), NULL, B_FOLLOW_NONE, 0 );
+			shared->act_img->display_bitmap->AddChild( virtualview );
+		
+			virtualview->SetHighColor(0,0,0);
+			virtualview->SetFont(&(ttWindow->containerview->fontview->currentfont), B_FONT_ALL);
+			virtualview->DrawString(ttWindow->containerview->textedit->Text(),
+							BPoint(100,100));
+
+		  	shared->act_img->display_bitmap->RemoveChild(virtualview );
+			shared->act_img->display_bitmap->Unlock();
+*/
+//			shared->act_img->UpdateDisplayImg();
+
+		}
+		break;
 	case ZOOM_OUT:
 		if (shared->act_img->zoom_level - ZOOM_AMOUNT > 0)
 		{
@@ -875,7 +915,6 @@ switch (msg->what)
 			shared->win_menu->ItemAt(shared->active_image)->SetLabel(shared->act_img->name);
 		Unlock();
 		break;
-		
 		
 	case SET_TRANSP:
 		msg->FindInt32("value",&number);
@@ -1054,25 +1093,20 @@ switch (msg->what)
 		if (ThePrefs.texttool_win_open==true)	
 		{ 
 			ttWindow->Lock(); ttWindow->Close(); 
-			shared->display_menu->ItemAt(8)->SetMarked(false);
-			ThePrefs.texttool_win_open=false;
 		}
 		else
 		{ 
-			ttWindow = new TextToolWindow(ThePrefs.texttool_frame,shared); 
+			ttWindow = new TextToolWindow(shared); 
 			ttWindow->Show();
-			shared->display_menu->ItemAt(8)->SetMarked(true);
-			ThePrefs.texttool_win_open=true;
 		}
 		break;
 
-		
 	case HIDE_ALL_WIN:
 		if (all_win_hidden==true)
 		{	
 			//redisplay everything
 			all_win_hidden = false;
-			shared->display_menu->ItemAt(9)->SetMarked(false);
+			shared->display_menu->ItemAt(8)->SetMarked(false);
 				
 			if (ThePrefs.brush_selector_open==true) brWindow->Show();
 			if (ThePrefs.paper_selector_open==true) ppWindow->Show();
@@ -1261,7 +1295,6 @@ switch (shared->active_tool)
 BMessage *mx = new BMessage(SET_CURSOR);
 mx->AddInt32("id",pointer_id); 
 PostMessage(mx);
-
 }
 
 void BPMWindow::OpenPanel()

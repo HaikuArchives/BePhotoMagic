@@ -71,13 +71,6 @@ button_08 = new BPictureButton(rect,"",off, on, new BMessage(BUTTON_08_MSG),B_TW
 bb_help.SetHelp(button_08,Language.get("ZOOM"));
 
 
-//BT_09
-/*
-rect.Set(0,0,20,20);	
-SetHighColor(255,0,0);
-fore_rect = new BBitmap(rect,B_SOLID_HIGH);
-*/			
-
 //change color
 rect.Set(BUTTON_X,0, (BUTTON_X)*2, BUTTON_Y );
 
@@ -128,10 +121,6 @@ CreateButton("move.png","XXmove.png");
 button_b_08 = new BPictureButton(rect,"",off, on, new BMessage(BUTTON_B_08_MSG),B_TWO_STATE_BUTTON);
 bb_help.SetHelp(button_b_08,Language.get("MOVE"));
 
-//BT_09
-//	rect.OffsetBy(0, BUTTON_Y);	
-//	StrokeRect(rect,B_SOLID_HIGH);
-
 fond->AddChild(button_01);
 fond->AddChild(button_02);
 fond->AddChild(button_03);
@@ -150,7 +139,7 @@ fond->AddChild(button_b_06);
 fond->AddChild(button_b_07);
 fond->AddChild(button_b_08);
 		
-//button_01->SetValue(B_CONTROL_ON); //paintbrush is default button
+button_01->SetValue(B_CONTROL_ON); //paintbrush is the default button
 rect.OffsetBy((BUTTON_X*-1), BUTTON_Y+1);
 
 rect.right-=2;
@@ -159,9 +148,6 @@ rect.top+=1;
 
 rect.left+=1;
 BRect tep = rect;
-
-// Switched the positions of the Background and forgound color windows to follow the
-// de facto standard of foreground on the left -- DarkWyrm
 
 BView *f_fond = new BView(rect,"",B_FOLLOW_ALL,B_WILL_DRAW);
 tep = f_fond->Bounds();
@@ -217,15 +203,12 @@ paper_view->AddChild(drag_paper);
 */  
 //  BDragger(BRect frame, BView *target, uint32 resizingMode = B_FOLLOW_NONE, uint32 flags = B_WILL_DRAW) 
 
-
-
 fond->AddChild(f_fond);
 fond->AddChild(b_fond);
 
 fond->AddChild(br_fond);
 fond->AddChild(pp_fond);
-
-    
+   
 bb_help.SetHelp(fore_view,Language.get("FOREGROUND"));
 bb_help.SetHelp(back_view,Language.get("BACKGROUND"));
 bb_help.SetHelp(brush_view,Language.get("BRUSHES"));
@@ -640,7 +623,7 @@ if (buttons==B_SECONDARY_MOUSE_BUTTON)
 	BRect v_rect=Frame();
 	BPoint delta;
 
-	//Bouton droit drag la win.
+	//Right button drags the window
     do 
     { 
 	   	GetMouse(&end, &buttons);

@@ -18,6 +18,8 @@ public:
 
 void PasteBrush(BPoint le_point);
 void PasteLine(BPoint start, BPoint end);
+//void PasteEllipse(BPoint center, int32 Rx, int32 Ry);
+void PasteEllipse(BRect frame);
 
 BPoint brush_pos[2048];
 BPoint last_pasted;
@@ -72,10 +74,10 @@ void ResizeCanvas(int16 bor_left, int16 bor_top, int16 bor_right, int16 bot_bott
 void  CropSelected();
 
 void  Filter_Invert();
-void  Filter_SlideHSV();
+//void Filter_SlideHSV();
 void Filter_Rotate180();
 void Filter_FlipHori();
-void Filter_LimitLevels(uint8 levels);
+//void Filter_LimitLevels(uint8 levels);
 
 void  InvertSelection(); 
 

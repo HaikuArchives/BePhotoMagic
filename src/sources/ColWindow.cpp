@@ -149,14 +149,6 @@ else
 	MouseMoved(point,B_ENTERED_VIEW,NULL);
 }
 
-/*
-if ((pt.x < (256/color_selector_size)) && (pt.y < (256/color_selector_size)) ) 	
-{	
-					
-	BMessage msg(CLICK_SQUARE);
-	msg.AddPoint("pos",pt);
-	Window()->PostMessage(&msg);
-}
 
 if ((pt.x < (256/color_selector_size)) && (pt.y < (256/color_selector_size)) ) 	
 {	
@@ -165,8 +157,15 @@ if ((pt.x < (256/color_selector_size)) && (pt.y < (256/color_selector_size)) )
 	msg.AddPoint("pos",pt);
 	Window()->PostMessage(&msg);
 }
-old_pt=pt;		
-*/
+
+if (pt.x > (264/color_selector_size))	
+{
+	BMessage msg(CLICK_SPECTRUM);
+	msg.AddPoint("pos",pt);
+	Window()->PostMessage(&msg);
+}
+//old_pt=pt;		
+
 }
 
 void ColView::MouseUp(BPoint point)

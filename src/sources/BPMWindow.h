@@ -1,27 +1,30 @@
 #ifndef NAT_WINDOW_H
 #define NAT_WINDOW_H
 
+#include <Cursor.h>
+#include <ScrollBar.h>
+
+#include "message_labels.h"
 #include "PrefWindow.h"
 #include "CreateWindow.h"
-#include "CurveWindow.h"
-#include "LimitLevelsWindow.h"
-
-#include "SaveAsPanel.h"
-
-#include "BPMView.h"
 #include "ProgressWin.h"
-#include "share.h"
-#include "LoadSavePanels.h"
 #include "PaperWindow.h"
 #include "BrushWindow.h"
 #include "LayerWindow.h"
 #include "InfoWindow.h"
 #include "RangeWindow.h"
-#include "ScrollBar.h"
+//#include "CurveWindow.h"
+#include "LimitLevelsWindow.h"
 #include "OptionWindow.h"
 #include "NavigationWindow.h"
 #include "ToolWindow.h"
 #include "TextToolWindow.h"
+
+#include "SaveAsPanel.h"
+#include "LoadSavePanels.h"
+
+#include "BPMView.h"
+#include "share.h"
 #include "cursors.h"
 
 #define FULL_SCREEN_NONE 0
@@ -33,12 +36,14 @@ class BPMWindow : public BWindow
 {
 public:
 	
-	share *shared;
+share *shared;
 
-				BPMWindow(BRect frame,share *sh); 
-				~BPMWindow();
+BPMWindow(BRect frame,share *sh); 
+~BPMWindow();
 virtual	bool	QuitRequested();
+
 void UpdateToolInfo();
+
 BView		*back_view;
 PicView		*inside_view; 
 BScrollView	*scroll_view;
@@ -52,10 +57,12 @@ OptionWindow	*opWindow;
 NavigationWindow *nvWindow;
 TextToolWindow	*ttWindow;
 ToolWindow 		 *tlWindow;
-
-
 RangeWindow 		 *rgWindow;
-LimitLevelsWindow    *llWindow;
+//LimitLevelsWindow    *llWindow;
+//CurveWindow *curv_win;
+CreateWindow *crt_win;
+PrefWindow *prefWindow;
+
 bool rgWindow_visible;
 
 BBitmap *back_bmp;	
@@ -66,10 +73,6 @@ void FrameResized(float width, float height);
 void DisableAll();
 void EnableAll();
 
-CurveWindow *curv_win;
-CreateWindow *crt_win;
-
-PrefWindow *prefWindow;
 
 void MessageReceived(BMessage *msg);
 void ShortCuts(BMessage *msg);
@@ -80,7 +83,7 @@ void SavePanel();
 BPMOpenPanel *panneau_load;
 SaveAsPanel     *panneau_save;
 
-	BMenu		*gimpFilterMenu;
+BMenu		*gimpFilterMenu;
 
 void UpdateTitle();
 void ZoomChanged();		

@@ -1,6 +1,7 @@
 #ifndef CREATE_WINDOW_H
 #define CREATE_WINDOW_H
 
+#include <string.h>
 #include "share.h"
 
 #define UNITS_CHANGED 	 'unch'

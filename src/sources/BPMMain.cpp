@@ -1,12 +1,13 @@
 #include "BPMMain.h"
+#include "ExeLog.h"
+
+ExeLog *dbgLog; // Debug/logging class
 
 int main()
 {	
-
-	BPMApplication	myApplication;
-	
+	dbgLog = new ExeLog("BPM_log"); 	
+ 	BPMApplication	myApplication;
 	myApplication.Run();
-
 	return(0);
 }
 
@@ -64,6 +65,7 @@ BPMApplication::BPMApplication()
 	
 	ab_win->Lock();
 	ab_win->Close();
+	dbgLog->print( "BPMApplication::BPMApplication" );	
 }
 
 void BPMApplication::ArgvReceived(int32 argc, char **argv)
@@ -110,9 +112,14 @@ for ( long i = --count; i >= 0; i-- )
 	char txt[NAME_SIZE];
 	entry.GetPath(&the_path);
 	sprintf(txt,the_path.Path());
+
+	// I really think the user is going to know when he/she opens a file twice
+	// and I don't think it's that big a deal. Also commented out the ProgressWindow
+	// stuff because it has some really funky hangs when opening multiple files --
+	// really speeds things up, too.
 			
 	//see if file is already loaded somewhere (loose translation)
-	int16 ii=-2; //if you start with 0 and there are no images, loop never exits
+/*	int16 ii=-2; //if you start with 0 and there are no images, loop never exits
 	int16 exists= -100;
 	do 
 	{	//if image exists, tell the user
@@ -146,10 +153,10 @@ for ( long i = --count; i >= 0; i-- )
 	}
 	else 	// load file
 	{
-		util.show_progress_load = ON;
+*///		util.show_progress_load = ON;
 		//util.mainWin->PostMessage(SHOW_PROGRESS_WIN);
 		shared->LoadNewImage(txt);	 //revert mode =OFF
-	}
+//	}
 
 	mainWindow->Lock();
 	mainWindow->ZoomChanged();

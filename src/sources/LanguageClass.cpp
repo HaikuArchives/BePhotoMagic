@@ -38,7 +38,8 @@ void LanguageClass::InitLang()
 		set("NO", "No");
 		set("CANCEL", "Cancel");
 		set("VERSION_BY", "English version by");
-		set("VERSION_AUTHOR", "Santiago Lema (santiago.lema@cryogen.ch)");
+//		set("VERSION_AUTHOR", "Santiago Lema (santiago.lema@cryogen.ch)");
+		set("VERSION_AUTHOR", "BPM Dev Team");
 
 		set("GET_LATEST_VERSION", "Get latest version at BeBits or at:");
 		set("MEM_USAGE", "Memory in use:");
@@ -125,13 +126,13 @@ void LanguageClass::InitLang()
 		set("RESIZE_IMAGE", "Resize Image...");
 		set("WEIGHT", "Weight");
 		
-		set("ROTATION_SYMETRY","Rotation / Symmetry...");
+		set("ROTATION_SYMETRY","Rotation / Flip...");
 		set("ROTATE_180","Rotate 180°" );
 		set("ROTATE_PLUS_90", "Rotate +90°");
 		set("ROTATE_MINUS_90", "Rotate -90°");
 		set("ROTATE_FREE", "Rotate freely...");
-		set("HORIZONTAL_SYMETRY","Horizontal Symmetry");
-		set("VERTICAL_SYMETRY", "Vertical Symmetry");
+		set("HORIZONTAL_SYMETRY","Horizontal Flip");
+		set("VERTICAL_SYMETRY", "Vertical Flip");
 	
 		//
 		set("CONVERT_IMAGE", "Convert Image");
@@ -320,7 +321,7 @@ bool LanguageClass::load(){
 			lItem[0] = '\0';
 			lValue[0] = '\0';
 			if(lLine[0] != ';'){
-				sscanf(lLine, "%s = %s", &lItem, &lValue);
+				sscanf(lLine, "%s = %s", (char *)&lItem,(char *) &lValue);
 				if(strlen(lItem) > 0){
 					char	*lK1, 
 							*lK2;

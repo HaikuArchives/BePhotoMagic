@@ -6,75 +6,120 @@ CalcTables TheTables;
 
 CalcTables::CalcTables()
 {
-//----------------------------------------
-//CREATION DES TABLES DE CONVERSION tranparence etc
+//Create transparency calculation tables
 
-	//TABLEAU 100*256
+	//Table is 100 x 256
 	int32 aa,bb,tmp;
 	aa = 0;
 	bb = 0;
-	while (aa!=100+1) //Non pas 100 +1!!!! je comprends pas tout... mais bon hein... ça marche..
+	//not past 101 - Mr. Lema didn't know why, but I'll figure it out later -- DW
+	while (aa!=100+1)	// 100 is the maximum pressure
 	{
-			while (bb!=255+1)
-			{
-			//tableau_transp[aa][bb] = valeur;
-			tmp = int32 ( ( ((float(bb)) / 256) + (1-((float(bb)) / 256))* (float(aa)/100))*100  );
-			if (tmp > 255) tmp=255; if (tmp < 1) tmp = 1; //non pas zéro sinon reboucle... je sais pas pourquoi mais bon ça marche non?
+		while (bb!=255+1)	// maximum value for a color channel
+		{
+			//transp_table[aa][bb] = value;
+			// for array[0][0]:
+
+			// Some bizarre math here which is rather inefficient. Trying 255 instead of 256.
+//			tmp = int32 ((((float(bb))/256)+(1-((float(bb))/256) )*(float(aa)/100))*100);
+			tmp = int32 ((((float(bb))/255)+(1-((float(bb))/255) )*(float(aa)/100))*100);
+			if (tmp > 255)
+				tmp=255; 
+			if (tmp < 1)
+				tmp = 1;
 			tab_transp[aa][bb] =  uint8(tmp);
+//			printf("\ntab_transp: %d",tmp);
 			
-			tmp = int32 (((aa*bb)/100));	 if (tmp > 255) tmp=255;  if (tmp <0) tmp=0;  tab_pourcent_x_val[aa][bb]= uint8(tmp);
-			tmp = int32(((float(255-bb)/256)*100)+aa); 
-			if (tmp <0) tmp=0;   if (tmp >100) tmp=100; tab_mask_transp[aa][bb] = uint8(tmp);
+			tmp = int32 (((aa*bb)/100));
+			if (tmp > 255)
+				tmp=255;
+			if (tmp <0)
+				tmp=0;
+			tab_pourcent_x_val[aa][bb]= uint8(tmp);
+
+			// when bb hits 256 this is probably going to have some serious problems. Trying 256-bb
+//			tmp = int32(((float(255-bb)/256)*100)+aa); 
+			tmp = int32(((float(256-bb)/256)*100)+aa); 
+			if (tmp <0)
+				tmp=0;
+			if (tmp >100)
+				tmp=100;
+			tab_mask_transp[aa][bb] = uint8(tmp);
 			
-			//MODES DESSIN		
-			tmp= uint8( (float(100-aa)/100)*bb); if (tmp > 255) tmp=255; if (tmp < 0) tmp=0;
+			// Draw Modes
+			tmp= uint8( (float(100-aa)/100)*bb);
+			if (tmp > 255)
+				tmp=255;
+			if (tmp < 0)
+				tmp=0;
 			tab_normal[aa][bb] = uint8(tmp); 
-			tmp = int32(bb*1.3); if (tmp > 255) tmp=255;	tab_lighten[aa][bb] = uint8 ((float(100-aa)/100)*tmp);
-			tmp = int32(bb/1.3); if (tmp < 0)   tmp=0;		tab_darken[aa][bb]  = uint8 ((float(100-aa)/100)*tmp);
+
+			tmp = int32(bb*1.3);
+			if (tmp > 255)
+				tmp=255;
+			tab_lighten[aa][bb] = uint8 ((float(100-aa)/100)*tmp);
+
+			tmp = int32(bb/1.3);
+			if (tmp < 0)
+				tmp=0;
+			tab_darken[aa][bb]  = uint8 ((float(100-aa)/100)*tmp);
 			
 			bb++;
-			}
-	bb=0;
-	aa++;
+		}
+		bb=0;
+		aa++;
 	} 
-
 
 //-----------------------------------------------------------------------
 				
-	//TABLEAU 256x256	
+	// 256x256 Table
 	aa = 0;
 	bb = 0;
-	 while (aa!=255+1)
-	 {
-			while (bb!=255+1)
-			{
+	while (aa!=255+1)
+	{
+		while (bb!=255+1)
+		{
 			
-			tmp = aa+bb; if (tmp>255) tmp= 255; if (tmp<0) tmp= 0;  tab_addition[aa][bb] = uint8(tmp);
+			tmp = aa+bb;
+			if (tmp>255)
+				tmp= 255;
+			if (tmp<0)
+				tmp= 0;
+			tab_addition[aa][bb] = uint8(tmp);
 			
 			tab_multiply[aa][bb] = uint8 (bb*(float(aa)/256));
 			tab_difference[aa][bb] = bb-aa;
-			if (aa < bb) tmp = bb;  else tmp=aa; tab_combine[aa][bb] = tmp;
+			if (aa < bb)
+				tmp = bb;
+			else
+				tmp=aa;
+			tab_combine[aa][bb] = tmp;
 			bb++;
-			}
-	bb=0;
-	aa++;
+		}
+		bb=0;
+		aa++;
 	}
 
 
-//tableau one dimension
+	// one-dimensional table 
 
 	aa = 0;
 
-			while (aa!=255+1)
-			{
-			tmp =uint32((float(aa) / 256) *100); if (tmp>100) tmp=100;	tab_char_to_percent[aa]  = 	100-uint8(tmp) ; 
-			tmp =uint32((float(aa) / 256) *100); tmp= 50+tmp/2; if (tmp>100) tmp=100;	 //comme en haut mais shadé à 50% pour mask_img
-			tab_char_to_shade[aa]  = 	uint8(tmp); 
+	while (aa!=255+1)
+	{
+		tmp =uint32((float(aa) / 256) *100);
+		if (tmp>100)
+			tmp=100;
+		tab_char_to_percent[aa]  = 	100-uint8(tmp); 
+		tmp =uint32((float(aa) / 256) *100);
+		tmp= 50+tmp/2;
+		if (tmp>100)
+			tmp=100;	 // like above, but shaded
+		tab_char_to_shade[aa]  = 	uint8(tmp); 
 
-			//transparence pixel du brush en float (0 à 1) fois 100
-			
-			aa++;
-			}
+		// Brush transparency is stored as a float 0-1 * 100
+		aa++;
+	}
 
 }
 

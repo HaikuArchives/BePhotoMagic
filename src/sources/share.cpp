@@ -91,6 +91,7 @@ if (was_active <0) was_active= 0; if (was_active > image_amount) was_active = 0;
 
 	image_amount++;
 	active_image=image_amount;
+	is_modified[active_image]=false;
 	les_images[active_image]= new BPMImage(le_nom,w,h); 
 	act_img = les_images[active_image];
 	act_img->CreateNewLayer(NULL);
@@ -100,7 +101,7 @@ if (was_active <0) was_active= 0; if (was_active > image_amount) was_active = 0;
 	
 }	
 
-void share::LoadNewImage(const char *fichier)
+bool share::LoadNewImage(const char *fichier)
 {
 ThePrefs.no_pictures_left=ON;	 //reactivated in Initpic
 /*
@@ -108,15 +109,22 @@ int8 stop_it = OFF;
 int16 was_active = active_image; //for restoration if needed
 if (was_active <0) was_active= 0; if (was_active > image_amount) was_active = 0;
 */
-	image_amount++;  active_image=image_amount;
+	image_amount++;  
+	// notice that active_image is effectively inc'ed as well
+	active_image=image_amount;
+	is_modified[active_image]=false;
 	les_images[active_image]= new BPMImage("",32,32); 
 	act_img = les_images[active_image];
 	if (act_img->LoadNewLayer(fichier) != B_ERROR)
 	{
 		act_lay = act_img->the_layers[act_img->layer_amount];
 		ImageAdded();
+		return true;
 	}
-	else DeleteImage(image_amount);
+	else 
+	{	DeleteImage(image_amount);
+		return false;
+	}
 
 }	
 
@@ -133,6 +141,7 @@ ThePrefs.no_pictures_left=ON; //prevent display during loading
 
 	image_amount++;
 	active_image=image_amount;
+	is_modified[active_image]=false;
 	les_images[active_image]= new BPMImage(nm,32,32); 
 	act_img = les_images[active_image];
 	act_img->NewLayerFromBmp(pic);
@@ -147,40 +156,52 @@ ThePrefs.no_pictures_left=ON; //prevent display during loading
 void share::DeleteImage(int32 which_one)
 {
 ThePrefs.no_pictures_left=ON; //prevent display while deleting
-bool reactivate =false;
+//bool reactivate =false;
 
-			util.mainWin->Lock();
-			if (win_menu->ItemAt(which_one)!=NULL)	win_menu->RemoveItem(which_one);
+	util.mainWin->Lock();
+		
+	// Remove the image title in menu
+	if (win_menu->ItemAt(which_one)!=NULL)
+		win_menu->RemoveItem(which_one);
 
-		BPMImage *old_active =les_images[which_one]; //for deleting later
+	BPMImage *old_active =les_images[which_one]; //for deleting later
 								
-		if (which_one!=image_amount) //if not the last one
-			{
-			reactivate=true;
-			//shift images
-			int16 i=which_one;
+	if (which_one != image_amount) //if not the last one
+	{
+//		reactivate=true;
+		//shift images
+		int16 i=which_one;
 			
-			do {
-				    if (les_images[i+1]!=NULL)	les_images[i] = les_images[i+1];   
-				    i++;
-			    } while (i!= image_amount);
+		do 
+		{	if (les_images[i+1]!= NULL)
+				les_images[i] = les_images[i+1];   
+			i++;
+		} while (i != image_amount);
 				
-			if (win_menu->ItemAt(which_one)!=NULL) win_menu->ItemAt(which_one)->SetMarked(true);
-			}
-		else 
-				which_one=image_amount-1; 	//is the last image
+		if (win_menu->ItemAt(which_one) != NULL)
+			win_menu->ItemAt(which_one)->SetMarked(true);
+	}
+	else 
+	{	which_one--; 	//is the last image
+		image_amount--;
+	}		
+	
+	if (image_amount <0)
+	{	ThePrefs.no_pictures_left=ON;
+		util.mainWin->PostMessage(DISABLE_ALL);
+	}
+	else
+	{	win_menu->ItemAt(which_one)->SetMarked(true);
+		ThePrefs.no_pictures_left=OFF;
+		util.mainWin->PostMessage(IMAGE_CHOSEN); //redraw newly active image
+	}
 			
-			image_amount--;
-			
-			if (image_amount <0) {ThePrefs.no_pictures_left=ON; util.mainWin->PostMessage(DISABLE_ALL);}
-			else win_menu->ItemAt(which_one)->SetMarked(true);
-			
-			delete old_active;		
+	delete old_active;		
 
-			if (reactivate==true) ThePrefs.no_pictures_left=OFF; //reactivate display
+//	if (reactivate==true)
+//		ThePrefs.no_pictures_left=OFF; //reactivate display
 
-			util.mainWin->PostMessage(IMAGE_CHOSEN); //redraw newly active image
-			util.mainWin->Unlock();
+	util.mainWin->Unlock();
 
 
 }
@@ -611,13 +632,13 @@ void share::ImageConvert(BBitmap *bit)
 	{
 		if (dest_accessor.Bitmap()->ColorSpace()==B_RGB32)
 		{
-		char str[NAME_SIZE];
-		sprintf(str,"(");
-		strcat(str,Language.get("FILTERED"));
-		strcat(str,")");
-		NewImageFromBmp(str,dest_accessor.Bitmap());
-		// Don't dispose it
-		dest_accessor.SetDispose(false);
+			char str[NAME_SIZE];
+			sprintf(str,"(");
+			strcat(str,Language.get("FILTERED"));
+			strcat(str,")");
+			NewImageFromBmp(str,dest_accessor.Bitmap());
+			// Don't dispose of it
+			dest_accessor.SetDispose(false);
 		}
 		else
 		{
@@ -636,6 +657,11 @@ void share::SetManipMenus()
 {
 util.mainWin->Lock();	
 
+	// Holds the number of plugin categories
+//	int8 categorycount,menuindex;
+//	BMenu *temp_menu;
+//	BMenuItem *temp_item;
+	
 	manip_menu->RemoveItems(0,manip_menu->CountItems());
 	convert_menu->RemoveItems(0,convert_menu->CountItems());
 
@@ -655,12 +681,32 @@ util.mainWin->Lock();
 	{
 		for (int i = 0; i < outCount; ++i)
 		{
+			// Get plugin
 			if (Image_GetAddonInfo(outList[i], &addonName, &addonInfo,
 					&addonCategory, &addonVersion) == B_OK)
 			{
-				BMessage *msg = new BMessage(IMAGE_MANIP);
+/*				// Does it belong to a new category
+				categorycount=manip_menu->CountItems;
+				if(categorycount)
+				{	// There's something here. See if one is a submenu
+					for(menuindex=0;menuindex<categorycount; menuindex++)
+					{
+						temp_menu=manip_menu->SubmenuAt(menuindex);
+						if(temp_menu != NULL)
+						{	// We have an item. 
+							// 1) is it a submenu? 2) is it a match?
+							
+						}
+					}
+				}
+				else
+				{	// Nothing's been added yet, so add the category and
+					// the filter into it
+				}
+*/				BMessage *msg = new BMessage(IMAGE_MANIP);
 				msg->AddInt32("addon_id", outList[i]);
-				manip_menu->AddItem(new BMenuItem(addonName, msg));
+				// Add item to beginning so the menu is sorted correctly
+				manip_menu->AddItem(new BMenuItem(addonName, msg),0);
 			}
 		}
 		delete[] outList;
@@ -679,7 +725,8 @@ util.mainWin->Lock();
 			{
 				BMessage *msg = new BMessage(IMAGE_CONV);
 				msg->AddInt32("addon_id", outList[i]);
-				convert_menu->AddItem(new BMenuItem(addonName, msg));
+				// Add item to beginning so the menu is sorted correctly
+				convert_menu->AddItem(new BMenuItem(addonName, msg),0);
 			}
 		}
 		delete[] outList;

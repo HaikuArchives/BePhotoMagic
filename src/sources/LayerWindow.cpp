@@ -424,6 +424,10 @@ if (shared->act_img!=NULL)
 
 }
 
+bool AllLayersView::ActivateLayer(int32 index=0)
+{	//Returns false if index was invalid or couldn't activate layer
+	return false;
+}
 
 void LayerWindow::FrameResized(float x, float y)
 {

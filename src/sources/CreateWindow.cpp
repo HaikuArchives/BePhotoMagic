@@ -40,10 +40,8 @@ int32 number,new_unit,res_type;
 
 	switch (msg->what)
 	{
-	
 		case DO_IT:
-		
-			shared->CreateNewImage(crt_view->name_field->Text(),crt_view->pix_x-1,crt_view->pix_y-1); 	//revert mode =OFF
+			shared->CreateNewImage(crt_view->name_field->Text(),crt_view->pix_x-1,crt_view->pix_y-1);
 			shared->act_img->SetUnitsResType(crt_view->units->Menu()->IndexOf(crt_view->units->Menu()->FindMarked()),
 										 atof(crt_view->res->Text()), 
 										 crt_view->res_type->Menu()->IndexOf(crt_view->res_type->Menu()->FindMarked())

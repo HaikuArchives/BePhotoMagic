@@ -34,6 +34,7 @@ class share
    
    int16 active_image;
    int16 image_amount;
+   bool is_modified[IMAGE_NUMBER_MAX];
 
    bool brush_is_perso;
    uint16 brush_x,brush_y,brush_rayon_x,brush_rayon_y;
@@ -52,13 +53,17 @@ class share
    uint8 hardness ;
    float pressure;
 
+	// font for the Text Tool
+	BFont currentfont;
+	char ttstring[255];
+
 	rgb_color fore_color;
 	rgb_color back_color;
 	rgb_color picker_color;
 	BBitmap *the_brush,*the_brush_24,*paper,*paper_24;
 	 
 	void CreateNewImage(const char *name,int16 w, int16 h);
-	void LoadNewImage(const char *nam_file);
+	bool LoadNewImage(const char *nam_file);
 	void NewImageFromBmp(const char *nm,BBitmap *pic);
 	void DeleteImage(int32 which_one);
 

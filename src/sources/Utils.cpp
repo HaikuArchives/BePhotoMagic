@@ -21,43 +21,46 @@ void Utils::RGBtoHSV( float r, float g, float b, float *h, float *s, float *v )
 { 
 	float min, max, delta;
         
-    	min = MIN( r, g); 
-        max = MAX( r, g);
-        min = MIN(min,b);
-        max = MAX(min,b);
+    min = MIN( r, g); 
+    max = MAX( r, g);
+    min = MIN(min,b);
+    max = MAX(min,b);
         
-        *v = max;                               // v
-        delta = max - min;
-        if( max != 0 ) 
-                *s = delta / max;               // s 
-        else { 
-                // r = g = b = 0                // s = 0, v is undefined 
-                *s = 0; 
-                *h = -1; 
-                return; 
-        }
-        if( r == max ) 
-                *h = ( g - b ) / delta;         // between yellow & magenta 
-        else if( g == max ) 
-                *h = 2 + ( b - r ) / delta;     // between cyan & yellow 
+    *v = max;	// v
+    delta = max - min;
+    if( max != 0 ) 
+    	*s = delta / max;	// s 
+    else
+    { 
+    	// r = g = b = 0	// s = 0, v is undefined 
+        *s = 0; 
+        *h = -1; 
+        return; 
+	}
+    if( r == max ) 
+    	*h = ( g - b ) / delta;			// between yellow & magenta 
+    else
+    	if( g == max ) 
+        	*h = 2 + ( b - r ) / delta;		// between cyan & yellow 
         else 
-                *h = 4 + ( r - g ) / delta;     // between magenta & cyan
-        *h *= 60;                               // degrees 
-        if( *h < 0 ) 
-                *h += 360;
+        	*h = 4 + ( r - g ) / delta;		// between magenta & cyan
+  	*h *= 60;                               // degrees 
+    if( *h < 0 ) 
+    	*h += 360;
 }
 
 void Utils::HSVtoRGB( float *r, float *g, float *b, float h, float s, float v ) 
 { 
         int i; 
         float f, p, q, t;
-        if( s == 0 ) { 
+        if( s == 0 )
+        { 
                 // grayscale
                 *r = *g = *b = v; 
                 return; 
         }
         h /= 60;                        // sector 0 to 5 
-        i = floor( h ); 
+        i = (int)floor( h ); 
         f = h - i;                      // factorial part of h 
         p = v * ( 1 - s ); 
         q = v * ( 1 - s * f ); 

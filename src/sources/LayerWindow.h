@@ -103,6 +103,7 @@ AllLayersView(BRect r, share *sh);
 share *shared;
 
 	void AddLayers();
+	bool ActivateLayer(int32 index=0);
 	OneLayerView *tab_layer_views[MAX_LAYER];
 
 };

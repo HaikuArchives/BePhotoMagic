@@ -452,6 +452,74 @@ util.mainWin->PostMessage(mmm);
 }//end PasteBrush()
 
 
+#define ROUND(a) ((int)(a+0.5))
+
+void Painting::PasteEllipse(BRect frame)
+{	// tweak interface to app for laziness purporses
+	int Rx = (int)floor(frame.IntegerWidth()/2);
+	int Ry = (int)floor(frame.IntegerHeight()/2);
+	int xCenter=(int)frame.left + Rx;
+	int yCenter=(int)frame.top + Ry;
+	int Rx2 = Rx*Rx;
+  	int Ry2 = Ry*Ry;
+  	int twoRx2 = 2*Rx2;
+  	int twoRy2 = 2*Ry2;
+  	int p;
+  	int x = 0;
+  	int y = Ry;
+  	int px = 0;
+  	int py = twoRx2 * y;
+
+  	// Plot the first set of points
+  	//ellipsePlotPoints (xCenter, yCenter, x, y);
+	PasteBrush(BPoint(xCenter + x, yCenter + y)); 
+ 	PasteBrush(BPoint(xCenter - x, yCenter + y)); 
+	PasteBrush(BPoint(xCenter + x, yCenter - y)); 
+  	PasteBrush(BPoint(xCenter - x, yCenter - y)); 
+
+  	// Region 1
+  	p = ROUND (Ry2 - (Rx2 * Ry) + (0.25 * Rx2));
+  	while (px < py) 
+  	{
+    	x++;
+    	px += twoRy2;
+    	if (p < 0)
+      		p += Ry2 + px;
+    	else 
+    	{
+      		y--;
+      		py -= twoRx2;
+      		p += Ry2 + px - py;
+    	}
+    	//ellipsePlotPoints (xCenter, yCenter, x, y);
+		PasteBrush(BPoint(xCenter + x, yCenter + y)); 
+ 		PasteBrush(BPoint(xCenter - x, yCenter + y)); 
+		PasteBrush(BPoint(xCenter + x, yCenter - y)); 
+  		PasteBrush(BPoint(xCenter - x, yCenter - y)); 
+  	}
+
+  	// Region 2
+  	p = ROUND (Ry2*(x+0.5)*(x+0.5) + Rx2*(y-1)*(y-1) - Rx2*Ry2);
+  	while (y > 0) 
+  	{
+    	y--;
+    	py -= twoRx2;
+    	if (p > 0) 
+      		p += Rx2 - py;
+    	else 
+    	{
+      		x++;
+      		px += twoRy2;
+      		p += Rx2 - py + px;
+    	}
+    	//ellipsePlotPoints (xCenter, yCenter, x, y);
+		PasteBrush(BPoint(xCenter + x, yCenter + y)); 
+	 	PasteBrush(BPoint(xCenter - x, yCenter + y)); 
+		PasteBrush(BPoint(xCenter + x, yCenter - y)); 
+	  	PasteBrush(BPoint(xCenter - x, yCenter - y)); 
+  	}
+}
+
 PicView::PicView(BRect r, share *sh, long flags) :
 	BView(r, "picview", flags, B_WILL_DRAW |
 							   B_SUBPIXEL_PRECISE | B_FULL_UPDATE_ON_RESIZE
@@ -484,9 +552,6 @@ PicView::~PicView()
 {
 
 }
-
-
-   
 
 void PicView::Pulse()
 {
@@ -714,21 +779,6 @@ if (updated_after_fill==OFF)
 	
 
 }
-
-/*
-void FloodFillNew(BPoint fill_pt)
-{
-	BRect testrect=Bounds();	// for linebounds testing
-	int32 right=testrect.IntegerWidth()-1;
-	int32 down=testrect.IntegerHeight()-1;
-	int32 right_edge=fill_pt.x;
-	int32 left_edge=fill_pt.x;
-	
-	// Find right edge
-	
-	
-}
-*/
 
 uint8 PicView::TestVal(BPoint pt)	// verify with tolerance
 {
@@ -1040,26 +1090,39 @@ SetHighColor(shared->act_lay[i]->guides_color);
 				Draw(modif_plus_brush);
 				StrokeLine(shared->ori_pos,where,B_SOLID_HIGH); 
 				break;
-	
+
+			case SEL_ELLIPSE:	
 			case ELLIPSE:
 				Draw(modif_plus_brush);
-				StrokeEllipse(BRect(shared->ori_pos,where),B_SOLID_HIGH);
-				break;
-			
-			case RECTANGLE:
-				Draw(modif_plus_brush);
+
 				SetHighColor(shared->high_select_color);
 				SetLowColor(shared->low_select_color);
-				StrokeRect(BRect(shared->pos_old,shared->pos_actuelle),B_MIXED_COLORS);
 
+				// Apparently, the StrokeEllipse function does not allow for
+				// a BRect which has its first argument with a greater
+				// position than the first.
+				if( (shared->pos_actuelle.y < shared->pos_old.y) || 
+								(shared->pos_actuelle.x < shared->pos_old.x) )
+					StrokeEllipse(BRect(shared->pos_actuelle,shared->pos_old),B_MIXED_COLORS);
+				else
+					StrokeEllipse(BRect(shared->pos_old,shared->pos_actuelle),B_MIXED_COLORS);
+				
 				SetHighColor(shared->fore_color);
 				SetLowColor(shared->back_color);
 				break;
 			
-			// just draws a rectangle for now
+			// just draws the preview rectangle for now
 			case SEL_RECT:
+			case RECTANGLE:
 				Draw(modif_plus_brush);
-				StrokeRect(BRect(shared->pos_old,shared->pos_actuelle),B_MIXED_COLORS );
+
+				SetHighColor(shared->high_select_color);
+				SetLowColor(shared->low_select_color);
+
+				StrokeRect(BRect(shared->pos_old,shared->pos_actuelle),B_MIXED_COLORS);
+
+				SetHighColor(shared->fore_color);
+				SetLowColor(shared->back_color);
 				break;
 
 			case PICK_BRUSH:
@@ -1089,8 +1152,15 @@ SetHighColor(shared->act_lay[i]->guides_color);
 				to_draw.right  += shared->brush_x ;
 				to_draw.top    -= shared->brush_y ;
 				to_draw.bottom += shared->brush_y ;
-				painting->PasteLine(shared->pos_old, shared->pos_actuelle);		
-				shared->pos_old = where;
+
+				// Changing this line to use PasteBrush still doesn't fix the
+				// real-time updates, but it definitely cleans up a number
+				// of issues
+//				painting->PasteLine(shared->pos_old, shared->pos_actuelle);	
+
+				painting->PasteBrush(shared->pos_actuelle);	
+//				shared->pos_old = where;
+				shared->pos_old = shared->pos_actuelle;
 				break;
 				
 			case MOVE:
@@ -1193,7 +1263,6 @@ switch (shared->active_tool)
 	//all tools that use virtualView
 	case ELLIPSE:
 	case RECTANGLE:
-	case SEL_RECT:
 		uses_virtual_view=true;
 	break;
 	
@@ -1232,36 +1301,61 @@ switch (shared->active_tool)
 		case MOVE: 			WithHand(point);   break; 
 */
 	case LINE:
-
 		// uncommented so that it actually uses the decent routine instead of the
 		// smooth_line routine. -- DarkWyrm
-		painting->PasteLine(shared->pos_old, shared->pos_actuelle);
-
 		//smooth_line(shared->pos_old, shared->pos_actuelle);
+
+		painting->PasteLine(shared->pos_old, shared->pos_actuelle);
 		has_modified=ON;
 	 	break; 
 
 	case ELLIPSE: 		
-		virtualView->BeginPicture(new BPicture);
+//		virtualView->BeginPicture(new BPicture);
 		if (shared->ori_buttons==B_PRIMARY_MOUSE_BUTTON)
 			virtualView->SetHighColor(shared->fore_color);
 		if (shared->ori_buttons==B_SECONDARY_MOUSE_BUTTON)
 			virtualView->SetHighColor(shared->back_color);
-	   	virtualView->StrokeEllipse(BRect(shared->pos_old,shared->pos_actuelle),B_SOLID_HIGH);
-    	my_pict = virtualView->EndPicture();
+
+		if( (shared->pos_actuelle.y < shared->pos_old.y) || 
+						(shared->pos_actuelle.x < shared->pos_old.x) )
+//			virtualView->StrokeEllipse(BRect(shared->pos_actuelle,shared->pos_old),B_SOLID_HIGH);
+			painting->PasteEllipse(BRect(shared->pos_actuelle,shared->pos_old));
+		else
+//			virtualView->StrokeEllipse(BRect(shared->pos_old,shared->pos_actuelle),B_SOLID_HIGH);
+//		virtualView->StrokeEllipse(BRect(shared->pos_old,shared->pos_actuelle),B_SOLID_HIGH);
+//    	my_pict = virtualView->EndPicture();
+			painting->PasteEllipse(BRect(shared->pos_old,shared->pos_actuelle));
 		has_modified=ON;
  		break; 
  	
 	case RECTANGLE: 		
-		virtualView->BeginPicture(new BPicture);
+//		virtualView->BeginPicture(new BPicture);
 		if (shared->ori_buttons==B_PRIMARY_MOUSE_BUTTON)
 			virtualView->SetHighColor(shared->fore_color);
 		if (shared->ori_buttons==B_SECONDARY_MOUSE_BUTTON)
 			virtualView->SetHighColor(shared->back_color);
-		virtualView->StrokeRect(BRect(shared->pos_old,shared->pos_actuelle),B_SOLID_HIGH);
-    	my_pict = virtualView->EndPicture();
+//		virtualView->StrokeRect(BRect(shared->pos_old,shared->pos_actuelle),B_SOLID_HIGH);
+//    	my_pict = virtualView->EndPicture();
+
+		// Draw the rectangle using the brush instead of Be's drawing routines
+		painting->PasteLine(shared->pos_old,BPoint(shared->pos_actuelle.x, shared->pos_old.y));
+		painting->PasteLine(shared->pos_old,BPoint(shared->pos_old.x, shared->pos_actuelle.y));
+		painting->PasteLine(shared->pos_actuelle,BPoint(shared->pos_old.x, shared->pos_actuelle.y));
+		painting->PasteLine(shared->pos_actuelle,BPoint(shared->pos_actuelle.x, shared->pos_old.y));
+
+		// Dot the calulated corners to fill in a couple gaps
+		painting->PasteBrush(BPoint(shared->pos_actuelle.x, shared->pos_old.y));
+		painting->PasteBrush(BPoint(shared->pos_old.x, shared->pos_actuelle.y));
 		has_modified=ON;
 		break; 
+
+	case SEL_RECT:
+		shared->act_img->UpdateDisplayImg(modif_plus_brush);
+		break;
+
+	case SEL_ELLIPSE:
+		shared->act_img->UpdateDisplayImg(modif_plus_brush);
+		break;
 
 	case PICK_BRUSH:
 	
@@ -1439,6 +1533,578 @@ if (shared->act_img!=NULL)
 }// end if
 
 }
+
+void PicView::CopyUnfiltered()
+{
+	if (ThePrefs.mask_mode==OFF)	
+	{
+		util.CopyRect(selected_zone, shared->act_img->undo_bitmap, BRect(0,0, selected_zone.Width(),
+						  selected_zone.Height()-1), util.sel_pic,   4);
+	}					  
+	else 
+	{
+		util.CopyRect(selected_zone, shared->act_img->mask_undo_bitmap, BRect(0,0, selected_zone.Width(),
+						  selected_zone.Height()-1), util.sel_pic,   1 );
+	}
+}
+
+
+void  PicView::PrepareFilter()
+{
+		ln_count = 0;
+			
+		if (ThePrefs.mask_mode==OFF)
+		{	//find the selection
+			selected_zone = shared->FindSelectedRect(); 
+			//1. copy image to a working bitmap
+			util.sel_pic = new BBitmap(BRect(0,0, selected_zone.Width(),selected_zone.Height()), B_RGB32);
+//			ln_width = util.sel_pic->Bounds().Width()*4;
+			ln_width = util.sel_pic->Bounds().IntegerWidth()*4;
+		}
+		else
+		{
+			selected_zone = shared->act_lay->img->Bounds(); 
+			util.sel_pic = new BBitmap(BRect(0,0, selected_zone.Width(),selected_zone.Height()), B_GRAY8);
+//			ln_width = util.sel_pic->Bounds().Width();
+			ln_width = util.sel_pic->Bounds().IntegerWidth();
+		}
+		
+		CopyUnfiltered();
+
+		util.sel_pic_bits = (uint8 *) util.sel_pic->Bits();
+		util.sel_length   = util.sel_pic->BitsLength();
+		
+		filtering = true;
+}
+
+void  PicView::InitProgress()
+{
+	if (util.sel_length >= SHOW_PROGRESS_LIMIT) 
+	{
+		
+		show_progress=ON;		
+		util.progress_win->Show();
+
+		BMessage *mm = new BMessage(SET_PROGRESS_NAME);
+		mm->AddString("text",Language.get("FILTERING"));
+		util.progress_win->PostMessage(mm);
+		
+		util.progress_win->PostMessage(RESET_PROGRESS);
+		util.progress_win->PostMessage(SET_PROGRESS_COLOR_FILTER);
+		
+		percent_val = util.sel_length/100;
+		percent_ctr = 0;
+	    percent=0;	
+    }
+    else show_progress = OFF;
+
+}
+
+void  PicView::EndProgress()
+{
+		util.progress_win->Hide();
+}
+
+
+void  PicView::FilteringDone()
+{
+
+	if (ThePrefs.mask_mode==OFF)
+	{
+		//Always use the undo bitmap!
+		util.CopyRectWithMask(util.sel_pic->Bounds(),util.sel_pic, selected_zone, 
+				shared->act_img->undo_bitmap, shared->act_img->mask_bitmap,4);
+					
+		shared->act_img->MemorizeUndo(selected_zone,FORE_COLOR);
+	}
+	else
+	{
+		//Always use the undo bitmap!
+		util.CopyRect(util.sel_pic->Bounds(), util.sel_pic, selected_zone, 
+					shared->act_img->undo_bitmap, 1);
+		shared->act_img->MemorizeUndo(selected_zone,MASK_FORE_COLOR);
+	}
+		
+	filtering = false;
+
+	shared->act_img->UpdateDisplayImg(selected_zone);
+	
+	// if erased, then crash on return from filter_limit_levels, for example
+	//	delete util.sel_pic; //delete the temp. bitmap
+}
+
+
+void PicView::UpdateProgress(uint32 bytes_updated)
+{ 
+if (show_progress==ON)
+{
+	percent_ctr += bytes_updated;
+
+	if ( percent_ctr  >= percent_val) 
+	{
+
+		percent+=1.0;	
+				
+		BMessage *p = new BMessage(UPDATE_PROGRESS);
+		p->AddInt32("value",1); util.progress_win->PostMessage(p); 
+		util.progress_win->PostMessage(p); 
+		percent_ctr=0; 
+
+	}
+}
+	
+}
+
+// I don't know what the hell Mr. Lema was doing with this. Adjust HSV/Colorize?
+// Needs to become a filter plugin, anyway. Disabled until plugged in.
+/*
+void  PicView::Filter_SlideHSV()
+{
+	PrepareFilter();
+	InitProgress();
+		
+	float r,g,b,h,s,v;
+		
+	for (uint32 pos=0; pos!=util.sel_length;  pos+=4)
+	{	
+		// Actual filtering section
+
+		r = *util.sel_pic_bits;  util.sel_pic_bits++; 
+		g = *util.sel_pic_bits; 	util.sel_pic_bits++; 
+		b = *util.sel_pic_bits;  	util.sel_pic_bits++; 
+		util.sel_pic_bits++; //skip the alpha
+			
+		util.RGBtoHSV( r, g, b, &h, &s, &v );
+		h+=60;
+		util.HSVtoRGB( &r, &g, &b, h, s, v);
+			
+		util.sel_pic_bits-=4;
+		*util.sel_pic_bits = r; util.sel_pic_bits++; 
+		*util.sel_pic_bits = g; util.sel_pic_bits++; 
+		*util.sel_pic_bits = b; util.sel_pic_bits++; 
+		util.sel_pic_bits++; //skip the alpha
+			
+		pos+=4;	
+        if ((ln_count+=4) >= ln_width)
+        { 	ln_count=0;
+        	UpdateProgress(ln_width);
+        }
+
+		
+	}
+		
+	EndProgress();
+	FilteringDone();
+		
+}
+*/
+void  PicView::InvertSelection()
+{
+	uint8 *bits = shared->mask_work_bits;
+ 	
+ 	uint32 pos=0;
+	uint32 length = shared->act_img->mask_undo_bitmap->BitsLength();
+	while (pos!=length)   
+	{	*bits = 255-*bits;
+		bits++;
+		pos++;
+	}
+	shared->act_img->MemorizeUndo(shared->act_img->mask_undo_bitmap->Bounds(),MASK_FORE_COLOR);
+	shared->act_img->UpdateDisplayImg(shared->act_img->mask_undo_bitmap->Bounds());
+	
+	//Draw(shared->act_img->mask_undo_bitmap->Bounds()); //and not Draw(sel_pic->Bounds());
+}
+
+void  PicView::Filter_Invert()
+{
+// There's a separate function for inverting the selection. DUH!
+
+//if (ThePrefs.mask_mode==OFF)
+//{
+		
+	PrepareFilter();
+	InitProgress();
+		
+	for (uint32 pos = 0; pos!=util.sel_length; pos++)
+	{	
+
+		//Filtering section
+//		*util.sel_pic_bits = 255-*util.sel_pic_bits ;
+		*util.sel_pic_bits ^= 255;	// should be a "bit" faster and does same thing
+		 util.sel_pic_bits++;  
+			
+		if (ln_count++ >= ln_width) 
+		{	ln_count=0;
+			UpdateProgress(ln_width);
+		}
+	} 
+		
+	EndProgress();
+	FilteringDone();
+//}
+//else InvertSelection();
+
+}
+// Including a Rotate plugin in the distribution which works better
+/*
+void PicView::Filter_Rotate180()
+{
+
+PrepareFilter();
+InitProgress();
+
+//uint32 percent_val =0;
+//uint32 percent_ctr = 0;
+		
+
+//8-bit mode or not
+
+uint8 *pic_bits = util.sel_pic_bits;
+uint8 *flipped_bits = util.sel_pic_bits;
+
+uint32 taillePic=0;
+uint8 tmp0,tmp1,tmp2,tmp3;
+
+			
+if (ThePrefs.mask_mode==OFF)
+{
+
+	//24-bit mode
+	taillePic=(util.sel_length/4)/2;
+
+	pic_bits +=  util.sel_length;
+
+	for (uint32 i = 0; i != taillePic; i++)
+	{
+		tmp0 = *(flipped_bits+0);//red
+	    tmp1 = *(flipped_bits+1); //green
+	    tmp2 = *(flipped_bits+2); //blue
+    	tmp3 = *(flipped_bits+3); //alpha
+
+		//copy b to a
+		*(flipped_bits+0) = *(pic_bits+0); //red
+	    *(flipped_bits+1) = *(pic_bits+1); //green
+    	*(flipped_bits+2) = *(pic_bits+2); //blue
+	    *(flipped_bits+3) = *(pic_bits+3); //alpha
+   	    
+    	//copy temp (=a) to b 
+		*(pic_bits+0) = tmp0; //red
+   		*(pic_bits+1) = tmp1; //green
+	   	*(pic_bits+2) = tmp2; //blue
+   		*(pic_bits+3) = tmp3; //alpha
+   	    
+		pic_bits -= 4;       
+    	flipped_bits += 4;
+	    if (ln_count+=4 >= ln_width)
+    	{	ln_count=0;
+    		UpdateProgress(ln_width);
+	    }
+	}	
+}//end if mask mode = OFF
+else
+{
+
+	//8-bit mode
+	taillePic=(util.sel_length)/2;
+
+	//go to end of image
+	pic_bits +=  util.sel_length;
+
+	for (uint32 i = 0; i < taillePic; i++)
+	{
+		
+	    tmp0 = *(flipped_bits+0);//red
+	    *(flipped_bits+0) = *(pic_bits+0); //red
+		*(pic_bits+0) = tmp0; //red
+ 
+		pic_bits --;    flipped_bits ++;
+   	   
+		if (ln_count++ >= ln_width)
+		{	ln_count=0;
+			UpdateProgress(ln_width);
+		}
+	}	
+}//end 8-bit mask mode
+
+EndProgress();
+FilteringDone();
+
+}
+*/
+void PicView::Filter_FlipHori()
+{
+
+PrepareFilter();
+InitProgress();
+		
+//uint32 percent_val =0;
+//uint32 percent_ctr = 0;
+		
+//8-bit mode or not
+uint8 *pic_bits = util.sel_pic_bits;
+uint8 *flipped_bits = util.sel_pic_bits;
+
+uint8 tmp0,tmp1,tmp2,tmp3;
+//int32 x = selected_zone.Width()-1; 
+//int32 y = selected_zone.Height()-1;
+int32 x = selected_zone.IntegerWidth()-1; 
+int32 y = selected_zone.IntegerHeight()-1;
+int32 i,j;
+
+if (ThePrefs.mask_mode==OFF)
+{
+	//24-bit mode
+
+	//first line
+	pic_bits +=  (x)*4;
+
+	//flip line after line
+	for (i = 0; i != y; i++)
+	{
+		for (j = 0; j != ceil(x/2); j++)
+      	{
+          	tmp0 = *(flipped_bits+0); //red
+   	      	tmp1 = *(flipped_bits+1); //green
+   	      	tmp2 = *(flipped_bits+2); //blue
+   	      	tmp3 = *(flipped_bits+3); //alpha
+   	      
+          	*(flipped_bits+0) = *(pic_bits+0); //red
+   	      	*(flipped_bits+1) = *(pic_bits+1); //green
+   	      	*(flipped_bits+2) = *(pic_bits+2); //blue
+   	      	*(flipped_bits+3) = *(pic_bits+3); //alpha
+
+	      	*(pic_bits+0) = tmp0; //red
+   	      	*(pic_bits+1) = tmp1; //green
+   	      	*(pic_bits+2) = tmp2; //blue
+   	      	*(pic_bits+3) = tmp3; //alpha
+           	pic_bits -= 4;       flipped_bits += 4;
+      	}
+       	UpdateProgress(ln_width);
+
+		pic_bits +=  (x+1)*4;
+		flipped_bits += 4;
+	}
+}//end if mask mode = OFF
+else
+{	// do nothing if in mask mode
+}
+
+EndProgress();
+FilteringDone();
+
+}//end flip_H
+
+
+/*
+void PicView::Filter_LimitLevels(uint8 levels)
+{
+//Isohélie = limited # of levels
+//it is just a question of rounding the figures with the multiple closer
+
+InitProgress();
+CopyUnfiltered();
+
+if (levels <1) levels = 1;
+uint8 step = 255/levels;
+if (step <1) step = 1;
+
+uint8 *pic_bits = util.sel_pic_bits;
+
+for (uint32 i = 0; i != util.sel_length; i++)
+{
+   	*pic_bits = uint8((*pic_bits / step) * step);
+  	pic_bits++;
+	
+    if (ln_count++ >= ln_width)
+    {	ln_count=0;
+    	UpdateProgress(ln_width);
+    }
+}	
+
+EndProgress();
+}
+*/
+
+
+/*
+// To add: store size in each undo data in cases of image resize, crop, etc.
+
+
+//FAIRE FLIP_Y quand ça marchera...
+
+void PicView::Filter_FlipX()
+{
+
+//mode 8bits ou pas
+
+uint32 *pic_bits = shared->bitmap_work_bits;
+uint32 *flipped_bits = dest_bits;
+
+int32 x = shared->act_img->pix_per_line; //on va que jusqu'à la moitié
+int32 y = shared->act_img->pix_per_row;
+uint32 i,j;
+
+if (shared->mask_mode==OFF)
+{
+//Mode 24 bits
+
+ //on va à la fin première ligne
+pic_bits +=  (pix_per_row-1)*4;
+
+//on flippe ligne après ligne
+for (i = 0; i != y; i++)
+	{
+			for (j = 0; j != x/2; j++)
+      {
+   	      *(flipped_bits+0) = *(pic_bits+0); //red
+   	      *(flipped_bits+1) = *(pic_bits+1); //green
+   	      *(flipped_bits+2) = *(pic_bits+2); //blue
+   	      *(flipped_bits+3) = *(pic_bits+3); //alpha
+
+ 	        pic_bits -= 4;       flipped_bits += 4;
+      } //fin x 
+
+		pic_bits +=  x*4;		flipped_bits +=  x*4;
+	}	//fin y
+
+}//end if mask mode = OFF
+else
+{
+//Mode 8 bits (mask)
+
+ //on va à la fin première ligne
+pic_bits +=  (pix_per_row-1);
+
+//flip line after line
+for (i = 0; i != y; i++)
+	{
+			for (j = 0; j != x/2; j++)
+      {
+   	      *flipped_bits = *pic_bits; //red
+ 	        pic_bits--;
+  	       flipped_bits++;
+      } //fin x 
+
+		pic_bits ++;   flipped_bits ++;
+	}	//fin y
+
+}//end mode mask (8bits)
+
+
+}
+
+
+void HistogramView::BuildHistogramData()
+{
+// Histogram view - breakdown of the frequency distribution of colors in the image
+	
+uint32 data[255];
+float percent_data[255];
+uint32 *pic_bits = shared->bitmap_work_bits;
+
+
+//tout à zéro pour commencer
+for (uint32 x = 0; x != 255; x++) data [x] =0;
+
+//on ajoutes les pixels selon les valeurs
+for (uint32 i = 0; i != taillePic; i++)
+	{
+			data[*pic_bits]+=1;
+  	  pic_bits++;
+	}	
+
+//et les pourcentages
+for (uint32 y = 0; y != 255; y++) percent_data[y] = 100* (data[y] / taillePic);
+
+}
+
+void HistogramView::Draw()
+{
+		BPoint startPos(0,0);
+		BPoint endPos(0,100);
+	
+		SetHighColor(0,0,0);
+
+		for (uint32 x = 0; x != 255; x++) 
+		{
+		 startPos.y = 100-percent_data [x];
+		 StrokeLine(startPos,endPos, B_SOLID_HIGH);
+ 	
+	   startPos.x+=1; 
+   	endPos.x +=1;
+
+		}
+
+}
+
+
+void PicView::Filter_BrightnessContrast(int8 bright, int8 contrast)
+{
+
+//Théorie
+//pour brightness on additione juste la valeur en question (idem que photoshop)
+//pour contrast on rapproche la couleur la plus sombre de la plus claire...
+//on monte le plus sombre en % de 255 
+
+//pour contraste
+//d'abord on doit trouver les valeurs extremes de la pic
+uint32 *search_bits = shared->bitmap_work_bits;
+
+uint8 darkest =255; //valeurs maximum inverses pour la recherche
+uint8 lightest =0;
+
+for (uint32 i = 0; i != taillePic; i++)
+	{
+   	 if (*search_bits  > lightest) lightest = *search_bits;
+   	 if (*search_bits  < darkest)  darkest   = *search_bits;
+  	  search_bits++;
+	}	
+
+//si plus grand que 100 on modifie le blanc sinon le noir
+if (contrast <=100)   darkest = (darkest*contrast)/100);  
+												 else lightest = (lightest*contrast)/100);
+
+//-------------------------------------------------------------------
+
+float current;
+
+uint32 *pic_bits = shared->bitmap_work_bits;
+uint32 *flipped_bits = dest_bits;
+
+uint8 new_values[255];
+int16 temp;
+
+//calcul du tableau des valeurs 
+for (uint32 i = 0; i != 255; i++)
+	{
+			//apply brightness ------------------------------------------
+      temp = i +bright;
+
+			//apply contrast ------------------------------------------
+			current = temp/255;
+
+      if (contrast <=100)  temp =   temp =  darkest + ((lightest-darkest)*current);
+				                        			else 		 temp =  lightest - ((lightest-darkest)*current);
+
+			//vérif validité-----------------------------------
+      if (temp < 0 )  new_values[i] =0;
+	    else 
+			{
+				if (temp > 255) new_values[i] =255; 
+		    else new_values[i] = uint8(temp);
+      }  
+
+  }
+
+
+}//fin brightnessContrast filter
+
+
+
+Dans photoshop:
+Généraliser la sélection = sélection plage couleurs (mode addition) 
+Etendre la sélection = plusieurs coups de baguette magique ( aux bords de la sélection et en mode addition) donc pix adjacents seul sélectionnés
+*/
 
 /* // Not using this - comment out for a little less compile time
 void PicView::smooth_line(BPoint start, BPoint end)
@@ -1654,573 +2320,4 @@ mmm->AddRect("zone",BRect(start,end));
 util.mainWin->PostMessage(mmm);
 
 }
-*/
-
-void PicView::CopyUnfiltered()
-{
-	if (ThePrefs.mask_mode==OFF)	
-	{
-		util.CopyRect(selected_zone, shared->act_img->undo_bitmap, BRect(0,0, selected_zone.Width(),
-						  selected_zone.Height()-1), util.sel_pic,   4);
-	}					  
-	else 
-	{
-		util.CopyRect(selected_zone, shared->act_img->mask_undo_bitmap, BRect(0,0, selected_zone.Width(),
-						  selected_zone.Height()-1), util.sel_pic,   1 );
-	}
-}
-
-
-void  PicView::PrepareFilter()
-{
-		ln_count = 0;
-			
-		if (ThePrefs.mask_mode==OFF)
-		{	//find the selection
-			selected_zone = shared->FindSelectedRect(); 
-			//1. copy image to a working bitmap
-			util.sel_pic = new BBitmap(BRect(0,0, selected_zone.Width(),selected_zone.Height()), B_RGB32);
-//			ln_width = util.sel_pic->Bounds().Width()*4;
-			ln_width = util.sel_pic->Bounds().IntegerWidth()*4;
-		}
-		else
-		{
-			selected_zone = shared->act_lay->img->Bounds(); 
-			util.sel_pic = new BBitmap(BRect(0,0, selected_zone.Width(),selected_zone.Height()), B_GRAY8);
-//			ln_width = util.sel_pic->Bounds().Width();
-			ln_width = util.sel_pic->Bounds().IntegerWidth();
-		}
-		
-		CopyUnfiltered();
-
-		util.sel_pic_bits = (uint8 *) util.sel_pic->Bits();
-		util.sel_length   = util.sel_pic->BitsLength();
-		
-		filtering = true;
-}
-
-void  PicView::InitProgress()
-{
-	if (util.sel_length >= SHOW_PROGRESS_LIMIT) 
-	{
-		
-		show_progress=ON;		
-		util.progress_win->Show();
-
-		BMessage *mm = new BMessage(SET_PROGRESS_NAME);
-		mm->AddString("text",Language.get("FILTERING"));
-		util.progress_win->PostMessage(mm);
-		
-		util.progress_win->PostMessage(RESET_PROGRESS);
-		util.progress_win->PostMessage(SET_PROGRESS_COLOR_FILTER);
-		
-		percent_val = util.sel_length/100;
-		percent_ctr = 0;
-	    percent=0;	
-    }
-    else show_progress = OFF;
-
-}
-
-void  PicView::EndProgress()
-{
-		util.progress_win->Hide();
-}
-
-
-void  PicView::FilteringDone()
-{
-
-	if (ThePrefs.mask_mode==OFF)
-	{
-		//Always use the undo bitmap!
-		util.CopyRectWithMask(util.sel_pic->Bounds(),util.sel_pic, selected_zone, 
-				shared->act_img->undo_bitmap, shared->act_img->mask_bitmap,4);
-					
-		shared->act_img->MemorizeUndo(selected_zone,FORE_COLOR);
-	}
-	else
-	{
-		//Always use the undo bitmap!
-		util.CopyRect(util.sel_pic->Bounds(), util.sel_pic, selected_zone, 
-					shared->act_img->undo_bitmap, 1);
-		shared->act_img->MemorizeUndo(selected_zone,MASK_FORE_COLOR);
-	}
-		
-	filtering = false;
-
-	shared->act_img->UpdateDisplayImg(selected_zone);
-	
-	// if erased, then crash on return from filter_limit_levels, for example
-	//	delete util.sel_pic; //delete the temp. bitmap
-}
-
-
-void PicView::UpdateProgress(uint32 bytes_updated)
-{ 
-if (show_progress==ON)
-{
-	percent_ctr += bytes_updated;
-
-	if ( percent_ctr  >= percent_val) 
-	{
-
-		percent+=1.0;	
-				
-		BMessage *p = new BMessage(UPDATE_PROGRESS);
-		p->AddInt32("value",1); util.progress_win->PostMessage(p); 
-		util.progress_win->PostMessage(p); 
-		percent_ctr=0; 
-
-	}
-}
-	
-}
-
-
-void  PicView::Filter_SlideHSV()
-{
-	PrepareFilter();
-	InitProgress();
-		
-	float r,g,b,h,s,v;
-		
-	for (uint32 pos=0; pos!=util.sel_length;  pos+=4)
-	{	
-		// Actual filtering section
-
-		r = *util.sel_pic_bits;  util.sel_pic_bits++; 
-		g = *util.sel_pic_bits; 	util.sel_pic_bits++; 
-		b = *util.sel_pic_bits;  	util.sel_pic_bits++; 
-		util.sel_pic_bits++; //skip the alpha
-			
-		util.RGBtoHSV( r, g, b, &h, &s, &v );
-		h+=60;
-		util.HSVtoRGB( &r, &g, &b, h, s, v);
-			
-		util.sel_pic_bits-=4;
-		*util.sel_pic_bits = r; util.sel_pic_bits++; 
-		*util.sel_pic_bits = g; util.sel_pic_bits++; 
-		*util.sel_pic_bits = b; util.sel_pic_bits++; 
-		util.sel_pic_bits++; //skip the alpha
-			
-		pos+=4;	
-        if ((ln_count+=4) >= ln_width)
-        { 	ln_count=0;
-        	UpdateProgress(ln_width);
-        }
-
-		
-	}
-		
-	EndProgress();
-	FilteringDone();
-		
-}
-
-void  PicView::InvertSelection()
-{
-	uint8 *bits = shared->mask_work_bits;
- 	
- 	uint32 pos=0;
-	uint32 length = shared->act_img->mask_undo_bitmap->BitsLength();
-	while (pos!=length)   
-	{	*bits = 255-*bits;
-		bits++;
-		pos++;
-	}
-	shared->act_img->MemorizeUndo(shared->act_img->mask_undo_bitmap->Bounds(),MASK_FORE_COLOR);
-	shared->act_img->UpdateDisplayImg(shared->act_img->mask_undo_bitmap->Bounds());
-	
-	//Draw(shared->act_img->mask_undo_bitmap->Bounds()); //and not Draw(sel_pic->Bounds());
-}
-
-void  PicView::Filter_Invert()
-{
-
-if (ThePrefs.mask_mode==OFF)
-{
-		
-	PrepareFilter();
-	InitProgress();
-		
-	for (uint32 pos = 0; pos!=util.sel_length; pos++)
-	{	
-
-		//Filtering section
-		*util.sel_pic_bits = 255-*util.sel_pic_bits ;
-		 util.sel_pic_bits++;  
-			
-		if (ln_count++ >= ln_width) 
-		{	ln_count=0;
-			UpdateProgress(ln_width);
-		}
-	} 
-		
-	EndProgress();
-	FilteringDone();
-}
-else InvertSelection();
-
-}
-
-
-
-void PicView::Filter_Rotate180()
-{
-
-PrepareFilter();
-InitProgress();
-
-//uint32 percent_val =0;
-//uint32 percent_ctr = 0;
-		
-
-//8-bit mode or not
-
-uint8 *pic_bits = util.sel_pic_bits;
-uint8 *flipped_bits = util.sel_pic_bits;
-
-uint32 taillePic=0;
-uint8 tmp0,tmp1,tmp2,tmp3;
-
-			
-if (ThePrefs.mask_mode==OFF)
-{
-
-	//24-bit mode
-	taillePic=(util.sel_length/4)/2;
-
-	pic_bits +=  util.sel_length;
-
-	for (uint32 i = 0; i != taillePic; i++)
-	{
-		tmp0 = *(flipped_bits+0);//red
-	    tmp1 = *(flipped_bits+1); //green
-	    tmp2 = *(flipped_bits+2); //blue
-    	tmp3 = *(flipped_bits+3); //alpha
-
-		//copy b to a
-		*(flipped_bits+0) = *(pic_bits+0); //red
-	    *(flipped_bits+1) = *(pic_bits+1); //green
-    	*(flipped_bits+2) = *(pic_bits+2); //blue
-	    *(flipped_bits+3) = *(pic_bits+3); //alpha
-   	    
-    	//copy temp (=a) to b 
-		*(pic_bits+0) = tmp0; //red
-   		*(pic_bits+1) = tmp1; //green
-	   	*(pic_bits+2) = tmp2; //blue
-   		*(pic_bits+3) = tmp3; //alpha
-   	    
-		pic_bits -= 4;       
-    	flipped_bits += 4;
-	    if (ln_count+=4 >= ln_width)
-    	{	ln_count=0;
-    		UpdateProgress(ln_width);
-	    }
-	}	
-}//end if mask mode = OFF
-else
-{
-
-	//8-bit mode
-	taillePic=(util.sel_length)/2;
-
-	//go to end of image
-	pic_bits +=  util.sel_length;
-
-	for (uint32 i = 0; i < taillePic; i++)
-	{
-		
-	    tmp0 = *(flipped_bits+0);//red
-	    *(flipped_bits+0) = *(pic_bits+0); //red
-		*(pic_bits+0) = tmp0; //red
- 
-		pic_bits --;    flipped_bits ++;
-   	   
-		if (ln_count++ >= ln_width)
-		{	ln_count=0;
-			UpdateProgress(ln_width);
-		}
-	}	
-}//end 8-bit mask mode
-
-EndProgress();
-FilteringDone();
-
-}
-
-void PicView::Filter_FlipHori()
-{
-
-PrepareFilter();
-InitProgress();
-		
-//uint32 percent_val =0;
-//uint32 percent_ctr = 0;
-		
-//8-bit mode or not
-uint8 *pic_bits = util.sel_pic_bits;
-uint8 *flipped_bits = util.sel_pic_bits;
-
-uint8 tmp0,tmp1,tmp2,tmp3;
-//int32 x = selected_zone.Width()-1; 
-//int32 y = selected_zone.Height()-1;
-int32 x = selected_zone.IntegerWidth()-1; 
-int32 y = selected_zone.IntegerHeight()-1;
-int32 i,j;
-
-if (ThePrefs.mask_mode==OFF)
-{
-	//24-bit mode
-
-	//first line
-	pic_bits +=  (x)*4;
-
-	//flip line after line
-	for (i = 0; i != y; i++)
-	{
-		for (j = 0; j != ceil(x/2); j++)
-      	{
-          	tmp0 = *(flipped_bits+0); //red
-   	      	tmp1 = *(flipped_bits+1); //green
-   	      	tmp2 = *(flipped_bits+2); //blue
-   	      	tmp3 = *(flipped_bits+3); //alpha
-   	      
-          	*(flipped_bits+0) = *(pic_bits+0); //red
-   	      	*(flipped_bits+1) = *(pic_bits+1); //green
-   	      	*(flipped_bits+2) = *(pic_bits+2); //blue
-   	      	*(flipped_bits+3) = *(pic_bits+3); //alpha
-
-	      	*(pic_bits+0) = tmp0; //red
-   	      	*(pic_bits+1) = tmp1; //green
-   	      	*(pic_bits+2) = tmp2; //blue
-   	      	*(pic_bits+3) = tmp3; //alpha
-           	pic_bits -= 4;       flipped_bits += 4;
-      	}
-       	UpdateProgress(ln_width);
-
-		pic_bits +=  (x+1)*4;
-		flipped_bits += 4;
-	}
-}//end if mask mode = OFF
-else
-{	// do nothing if in mask mode
-}
-
-EndProgress();
-FilteringDone();
-
-}//end flip_H
-
-
-
-void PicView::Filter_LimitLevels(uint8 levels)
-{
-//Isohélie = limited # of levels
-//it is just a question of rounding the figures with the multiple closer
-
-InitProgress();
-CopyUnfiltered();
-
-if (levels <1) levels = 1;
-uint8 step = 255/levels;
-if (step <1) step = 1;
-
-uint8 *pic_bits = util.sel_pic_bits;
-
-for (uint32 i = 0; i != util.sel_length; i++)
-{
-   	*pic_bits = uint8((*pic_bits / step) * step);
-  	pic_bits++;
-	
-    if (ln_count++ >= ln_width)
-    {	ln_count=0;
-    	UpdateProgress(ln_width);
-    }
-}	
-
-EndProgress();
-}
-
-
-
-/*
-// To add: store size in each undo data in cases of image resize, crop, etc.
-
-
-//FAIRE FLIP_Y quand ça marchera...
-
-void PicView::Filter_FlipX()
-{
-
-//mode 8bits ou pas
-
-uint32 *pic_bits = shared->bitmap_work_bits;
-uint32 *flipped_bits = dest_bits;
-
-int32 x = shared->act_img->pix_per_line; //on va que jusqu'à la moitié
-int32 y = shared->act_img->pix_per_row;
-uint32 i,j;
-
-if (shared->mask_mode==OFF)
-{
-//Mode 24 bits
-
- //on va à la fin première ligne
-pic_bits +=  (pix_per_row-1)*4;
-
-//on flippe ligne après ligne
-for (i = 0; i != y; i++)
-	{
-			for (j = 0; j != x/2; j++)
-      {
-   	      *(flipped_bits+0) = *(pic_bits+0); //red
-   	      *(flipped_bits+1) = *(pic_bits+1); //green
-   	      *(flipped_bits+2) = *(pic_bits+2); //blue
-   	      *(flipped_bits+3) = *(pic_bits+3); //alpha
-
- 	        pic_bits -= 4;       flipped_bits += 4;
-      } //fin x 
-
-		pic_bits +=  x*4;		flipped_bits +=  x*4;
-	}	//fin y
-
-}//end if mask mode = OFF
-else
-{
-//Mode 8 bits (mask)
-
- //on va à la fin première ligne
-pic_bits +=  (pix_per_row-1);
-
-//flip line after line
-for (i = 0; i != y; i++)
-	{
-			for (j = 0; j != x/2; j++)
-      {
-   	      *flipped_bits = *pic_bits; //red
- 	        pic_bits--;
-  	       flipped_bits++;
-      } //fin x 
-
-		pic_bits ++;   flipped_bits ++;
-	}	//fin y
-
-}//end mode mask (8bits)
-
-
-}
-
-
-void HistogramView::BuildHistogramData()
-{
-// Histogram view - breakdown of the frequency distribution of colors in the image
-	
-uint32 data[255];
-float percent_data[255];
-uint32 *pic_bits = shared->bitmap_work_bits;
-
-
-//tout à zéro pour commencer
-for (uint32 x = 0; x != 255; x++) data [x] =0;
-
-//on ajoutes les pixels selon les valeurs
-for (uint32 i = 0; i != taillePic; i++)
-	{
-			data[*pic_bits]+=1;
-  	  pic_bits++;
-	}	
-
-//et les pourcentages
-for (uint32 y = 0; y != 255; y++) percent_data[y] = 100* (data[y] / taillePic);
-
-}
-
-void HistogramView::Draw()
-{
-		BPoint startPos(0,0);
-		BPoint endPos(0,100);
-	
-		SetHighColor(0,0,0);
-
-		for (uint32 x = 0; x != 255; x++) 
-		{
-		 startPos.y = 100-percent_data [x];
-		 StrokeLine(startPos,endPos, B_SOLID_HIGH);
- 	
-	   startPos.x+=1; 
-   	endPos.x +=1;
-
-		}
-
-}
-
-
-void PicView::Filter_BrightnessContrast(int8 bright, int8 contrast)
-{
-
-//Théorie
-//pour brightness on additione juste la valeur en question (idem que photoshop)
-//pour contrast on rapproche la couleur la plus sombre de la plus claire...
-//on monte le plus sombre en % de 255 
-
-//pour contraste
-//d'abord on doit trouver les valeurs extremes de la pic
-uint32 *search_bits = shared->bitmap_work_bits;
-
-uint8 darkest =255; //valeurs maximum inverses pour la recherche
-uint8 lightest =0;
-
-for (uint32 i = 0; i != taillePic; i++)
-	{
-   	 if (*search_bits  > lightest) lightest = *search_bits;
-   	 if (*search_bits  < darkest)  darkest   = *search_bits;
-  	  search_bits++;
-	}	
-
-//si plus grand que 100 on modifie le blanc sinon le noir
-if (contrast <=100)   darkest = (darkest*contrast)/100);  
-												 else lightest = (lightest*contrast)/100);
-
-//-------------------------------------------------------------------
-
-float current;
-
-uint32 *pic_bits = shared->bitmap_work_bits;
-uint32 *flipped_bits = dest_bits;
-
-uint8 new_values[255];
-int16 temp;
-
-//calcul du tableau des valeurs 
-for (uint32 i = 0; i != 255; i++)
-	{
-			//apply brightness ------------------------------------------
-      temp = i +bright;
-
-			//apply contrast ------------------------------------------
-			current = temp/255;
-
-      if (contrast <=100)  temp =   temp =  darkest + ((lightest-darkest)*current);
-				                        			else 		 temp =  lightest - ((lightest-darkest)*current);
-
-			//vérif validité-----------------------------------
-      if (temp < 0 )  new_values[i] =0;
-	    else 
-			{
-				if (temp > 255) new_values[i] =255; 
-		    else new_values[i] = uint8(temp);
-      }  
-
-  }
-
-
-}//fin brightnessContrast filter
-
-
-
-Dans photoshop:
-Généraliser la sélection = sélection plage couleurs (mode addition) 
-Etendre la sélection = plusieurs coups de baguette magique ( aux bords de la sélection et en mode addition) donc pix adjacents seul sélectionnés
 */
