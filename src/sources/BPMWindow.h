@@ -21,10 +21,8 @@
 #include "OptionWindow.h"
 #include "NavigationWindow.h"
 #include "ToolWindow.h"
+#include "TextToolWindow.h"
 #include "cursors.h"
-
-#define MENU_PREFS 		'mnpr'
-#define HIDE_ALL_WIN	'hdal'
 
 #define FULL_SCREEN_NONE 0
 #define FULL_SCREEN_HALF 1
@@ -52,6 +50,7 @@ LayerWindow 	*lyWindow;
 InfoWindow		*ifWindow;
 OptionWindow	*opWindow;
 NavigationWindow *nvWindow;
+TextToolWindow	*ttWindow;
 ToolWindow 		 *tlWindow;
 
 

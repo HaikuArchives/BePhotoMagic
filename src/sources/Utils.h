@@ -86,7 +86,7 @@ class Utils
 	
 	BWindow *mainWin,*toolWin,*brushWin,*paperWin,*layerWin;
 	BWindow *navWin, *infoWin,*optionWin;
-	BWindow *foreWin,*backWin, *textWin;
+	BWindow *foreWin,*backWin, *texttoolWin;
 	
     char version_txt[256];
     char version_only_txt[256];

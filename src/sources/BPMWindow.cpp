@@ -2,6 +2,9 @@
 
 #define PAINT_MARGIN 0
 
+#define SHOW_TEXTTOOL_WIN 'sttw'
+#define HIDE_ALL_WIN	'hdal'
+
 #define  MENU_HSV 'mhsv'
 #define  MENU_SELECT_ALL 'msla'
 #define  MENU_SELECT_RANGE 'slrn'
@@ -13,7 +16,7 @@
 #define  MENU_SYMETRY_H  'symh'
 #define  MENU_SYMETRY_V  'symv'
 
-
+#define MENU_PREFS 		'mnpr'
 #define  MENU_LIMIT_LEVELS  'ltlv'
 
 BPMWindow::BPMWindow(BRect frame, share *sh)
@@ -141,16 +144,26 @@ rgWindow_visible = false;
 
 	//DON'T CHANGE THE ORDER!!!
 	shared->display_menu = new BMenu(Language.get("DISPLAY"));
-	//shared->display_menu->SetRadioMode(TRUE);//pour avoir un menu d'options à choix (coche)
-	shared->display_menu->AddItem(new BMenuItem(Language.get("BRUSHES"),   new BMessage(SHOW_BRUSH_WIN),'1',B_COMMAND_KEY));
-	shared->display_menu->AddItem(new BMenuItem(Language.get("PAPERS"),   new BMessage(SHOW_PAPER_WIN),'2',B_COMMAND_KEY ));
-	shared->display_menu->AddItem(new BMenuItem(Language.get("LAYERS"),   new BMessage(SHOW_LAYER_WIN),'3',B_COMMAND_KEY ));
-	shared->display_menu->AddItem(new BMenuItem(Language.get("INFOS"),   new BMessage(SHOW_INFO_WIN),'4',B_COMMAND_KEY));
-	shared->display_menu->AddItem(new BMenuItem(Language.get("OPTIONS"),   new BMessage(SHOW_OPTION_WIN),'5',B_COMMAND_KEY));
-	shared->display_menu->AddItem(new BMenuItem(Language.get("NAVIGATION"),   new BMessage(SHOW_NAVIGATION_WIN),'6',B_COMMAND_KEY ));
-	shared->display_menu->AddItem(new BMenuItem(Language.get("TOOLS"),   new BMessage(SHOW_TOOL_WIN),'7',B_COMMAND_KEY ));
+	//shared->display_menu->SetRadioMode(TRUE);
+	shared->display_menu->AddItem(new BMenuItem(Language.get("BRUSHES"),
+					new BMessage(SHOW_BRUSH_WIN),'1',B_COMMAND_KEY));
+	shared->display_menu->AddItem(new BMenuItem(Language.get("PAPERS"),   
+					new BMessage(SHOW_PAPER_WIN),'2',B_COMMAND_KEY ));
+	shared->display_menu->AddItem(new BMenuItem(Language.get("LAYERS"),
+					new BMessage(SHOW_LAYER_WIN),'3',B_COMMAND_KEY ));
+	shared->display_menu->AddItem(new BMenuItem(Language.get("INFOS"),
+					new BMessage(SHOW_INFO_WIN),'4',B_COMMAND_KEY));
+	shared->display_menu->AddItem(new BMenuItem(Language.get("OPTIONS"),
+					new BMessage(SHOW_OPTION_WIN),'5',B_COMMAND_KEY));
+	shared->display_menu->AddItem(new BMenuItem(Language.get("NAVIGATION"),
+					new BMessage(SHOW_NAVIGATION_WIN),'6',B_COMMAND_KEY ));
+	shared->display_menu->AddItem(new BMenuItem(Language.get("TOOLS"),
+					new BMessage(SHOW_TOOL_WIN),'7',B_COMMAND_KEY ));
+	shared->display_menu->AddItem(new BMenuItem("Text Tool",
+					new BMessage(SHOW_TEXTTOOL_WIN),'8',B_COMMAND_KEY ));
 	shared->display_menu->AddSeparatorItem();
-	shared->display_menu->AddItem(new BMenuItem(Language.get("HIDE_ALL"),   new BMessage(HIDE_ALL_WIN),'H',B_COMMAND_KEY | B_SHIFT_KEY ));
+	shared->display_menu->AddItem(new BMenuItem(Language.get("HIDE_ALL"),
+					new BMessage(HIDE_ALL_WIN),'H',B_COMMAND_KEY | B_SHIFT_KEY ));
 	shared->menubar->AddItem(shared->display_menu);
 
 	// Dynamically created menu to pick which image is currently active
@@ -687,15 +700,15 @@ switch (msg->what)
 		PostMessage(new BMessage(TOOL_CHANGED)); 
 		break;
 		
-	case ACTIVATE_BRUSH:
-		//for the moment, no one sends this message
+		//for the moment, no one sends this message, nor needs to
+/*	case ACTIVATE_BRUSH:
 		msg->FindInt32("num",&number); 
 		shared->current_brush=number;
 		shared->generateBrush(shared->current_brush);
 		PostMessage(new BMessage(UPDATE_TITLE)); 
 		PostMessage(new BMessage(TOOL_CHANGED)); 	
 		break;
-		
+*/		
 	case BRUSH_NEXT:
 		shared->generateBrush(shared->current_brush+1);
 		PostMessage(new BMessage(UPDATE_TITLE)); 
@@ -1037,13 +1050,29 @@ switch (msg->what)
 		}
 		break;
 		
+	case SHOW_TEXTTOOL_WIN:
+		if (ThePrefs.texttool_win_open==true)	
+		{ 
+			ttWindow->Lock(); ttWindow->Close(); 
+			shared->display_menu->ItemAt(8)->SetMarked(false);
+			ThePrefs.texttool_win_open=false;
+		}
+		else
+		{ 
+			ttWindow = new TextToolWindow(ThePrefs.texttool_frame,shared); 
+			ttWindow->Show();
+			shared->display_menu->ItemAt(8)->SetMarked(true);
+			ThePrefs.texttool_win_open=true;
+		}
+		break;
+
 		
 	case HIDE_ALL_WIN:
 		if (all_win_hidden==true)
 		{	
 			//redisplay everything
 			all_win_hidden = false;
-			shared->display_menu->ItemAt(8)->SetMarked(false);
+			shared->display_menu->ItemAt(9)->SetMarked(false);
 				
 			if (ThePrefs.brush_selector_open==true) brWindow->Show();
 			if (ThePrefs.paper_selector_open==true) ppWindow->Show();
@@ -1060,7 +1089,7 @@ switch (msg->what)
 		{
 				// hide everything
 			all_win_hidden = true;
-			shared->display_menu->ItemAt(8)->SetMarked(true);
+			shared->display_menu->ItemAt(9)->SetMarked(true);
 	
 			if (ThePrefs.brush_selector_open==true) brWindow->Hide();
 			if (ThePrefs.paper_selector_open==true) ppWindow->Hide();
@@ -1071,6 +1100,7 @@ switch (msg->what)
 			if (ThePrefs.tool_win_open==true)		util.toolWin->Hide();
 			if (ThePrefs.back_selector_open==true)	util.foreWin->Hide();
 			if (ThePrefs.fore_selector_open==true)	util.backWin->Hide();
+			if (ThePrefs.texttool_win_open==true) util.texttoolWin->Hide();
 		}
 		break;
 
@@ -1145,20 +1175,21 @@ if (shared->act_img!=NULL)
 	else
 	{	
 		// Need to set the scroll bar's range here --DW
-		scrollbar->SetRange(0,50);
 		inside_view->ScrollTo(0,0);
+		scrollbar->SetRange(0,img_rect.IntegerHeight()-win_rect.IntegerHeight());
 	}
 
 	scrollbar=scroll_view->ScrollBar(B_HORIZONTAL);
 	if( (img_rect.IntegerWidth() < win_rect.IntegerWidth()))
-	{	inside_view->ScrollTo(0,0);
+	{	
+		inside_view->ScrollTo(0,0);
 		scrollbar->SetRange(0,0);
 	}
 	else
 	{	
 		// Need to set the scroll bar's range here -- DW
-		scrollbar->SetRange(0,50);
 		inside_view->ScrollTo(0,0);
+		scrollbar->SetRange(0,img_rect.IntegerWidth()-win_rect.IntegerWidth());
 	}
 
 }

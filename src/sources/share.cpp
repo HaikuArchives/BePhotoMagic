@@ -456,20 +456,21 @@ void share::UseAsBrush(BBitmap *temp_32)
 	uint16 moyenne=0;
 	uint32 pos=0;
 	uint32 taille=the_brush->BitsLength();
-	while (pos!=taille)
+	
+	// RGBA32 color space assumed
+		while (pos!=taille)
 		{
-		moyenne  = 0;
-		moyenne += *tmp_ptr; tmp_ptr++; //blue
-		moyenne += *tmp_ptr; tmp_ptr++;	//green
-		moyenne += *tmp_ptr; tmp_ptr++;	//red
-		tmp_ptr++;						//alpha
-		moyenne/=3; //average of the RGB triple
-		
-		*dest_ptr = (uint8) moyenne;
-		dest_ptr++;
-		pos++;
+			moyenne  = 0;
+			moyenne += *tmp_ptr; tmp_ptr++; //blue
+			moyenne += *tmp_ptr; tmp_ptr++;	//green
+			moyenne += *tmp_ptr; tmp_ptr++;	//red
+			tmp_ptr++;						//alpha
+			moyenne/=3; //average of the RGB triple
+			*dest_ptr = (uint8) moyenne;
+			dest_ptr++;
+			pos++;
 		}
-
+	
     the_brush_bits = (uint8 *)the_brush->Bits();
 	brush_x = uint16 (the_brush->Bounds().Width()  + 1);
 	brush_y = uint16 (the_brush->Bounds().Height() + 1);

@@ -122,7 +122,8 @@ fore_selector_size=2; //nb de fois à diviser les coordonnées, faudrait éviter
 back_selector_size=2; //nb de fois à diviser les coordonnées, faudrait éviter autre que 1 ou 2...;-)
 
 //positions par défaut
-brushes_frame.Set(20,120,20+3*64+B_V_SCROLL_BAR_WIDTH,120+3*64); 
+//brushes_frame.Set(20,120,20+3*64+B_V_SCROLL_BAR_WIDTH,120+3*64);
+brushes_frame.Set(60,120,260,350); 
 paper_frame = brushes_frame;
 layer_frame = brushes_frame;
 layer_frame.right += 56+20; 
@@ -144,6 +145,7 @@ navigation_frame.Set(0,0,192,128); navigation_frame.OffsetBy(300,300);
 
 tool_frame.Set(8,80,8+(24*2)-1,80+(9*23)-1+48+48-2+14);
 
+texttool_frame=BRect(100,100,600,500);
 
 //par défaut toutes les fenêtres sont fermées
 create_win_open=false;

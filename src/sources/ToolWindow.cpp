@@ -357,8 +357,9 @@ BMessage *tmp;
    	 		break; 	
 
 	   	case BUTTON_07_MSG:
-		   	DeselectAll();  button_07->SetValue(B_CONTROL_ON);
-   		 	shared->active_tool=TEXT;
+//		   	DeselectAll();  button_07->SetValue(B_CONTROL_ON);
+// 		 	shared->active_tool=TEXT;
+			util.mainWin->PostMessage('sttw');
    	 		break; 	
 
 	   	case BUTTON_08_MSG:

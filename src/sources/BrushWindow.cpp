@@ -104,7 +104,7 @@ perso_scroll_view = new BScrollView(Language.get("PERSO_BRUSHES"), pr_br_view,
 
 
 //BView *set_view = new BView(Bounds(),Language.get("BRUSHES"),B_FOLLOW_ALL, B_WILL_DRAW);
-BView *set_view = new BrushSelectorView(Bounds());
+BView *set_view = new BrushSelectorView(Bounds(), shared);
 set_view->SetViewColor(216,216,216);
 
 

@@ -75,11 +75,14 @@ char lang_name[256];
   	bool option_win_open;
  	bool tool_win_open;
  	bool navigation_win_open;
+	bool texttool_win_open;
+
  	bool fore_selector_open;
  	bool layer_selector_open;
  	bool back_selector_open;
  	bool brush_selector_open;
  	bool paper_selector_open;
+
 	bool save_panel_open;
 	bool open_panel_open;
 	
@@ -108,7 +111,7 @@ char lang_name[256];
     rgb_color masking_color;
 
  	BRect brushes_frame, back_color_frame,fore_color_frame;
- 	BRect paper_frame, pref_frame,layer_frame;
+ 	BRect paper_frame, pref_frame,layer_frame, texttool_frame;
  	BRect info_frame, option_frame, navigation_frame,tool_frame;
 	
 	uint8	no_pictures_left;

@@ -56,7 +56,6 @@ opacity_slider->SetBarColor(a_col);
 opacity_slider->UseFillColor(true,&a_colb);
 opacity_slider->SetHashMarks(B_HASH_MARKS_BOTTOM); 
 opacity_slider->SetHashMarkCount(10+1);
-opacity_slider->SetValue(100);
 AddChild (opacity_slider);
 
 }
@@ -121,7 +120,7 @@ void OptionView::UpdateOptions()
 	rect.bottom = COMMON_OPTION_HEIGHT;
 	common_view = new CommonOptionsView(rect,shared);
 	AddChild(common_view);
-	
+
 Window()->PostMessage(TRANSP_CHANGED);
 
 }
@@ -245,7 +244,6 @@ int32 number;
 			sprintf(str,Language.get("OPACITY"));
 			sprintf(str2," %.0f%%",val_a);
 			strcat(str,str2);
-//			sprintf (str2," (-> %.1f%%)", shared->pressure*100);
 			sprintf (str2," Pressure: %.1f%%", shared->pressure*100);
 			strcat(str,str2);
 

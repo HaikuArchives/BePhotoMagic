@@ -57,7 +57,7 @@ BPMApplication::BPMApplication()
 //	mainWindow->ZoomChanged(); 
 
 	// Quick hack until I can find the definition of util.version_txt -- DarkWyrm
-	sprintf(util.version_txt,"BePhotoMagic");
+//	sprintf(util.version_txt,"BePhotoMagic");
 	
 	mainWindow->PostMessage(UPDATE_TITLE);
 	
