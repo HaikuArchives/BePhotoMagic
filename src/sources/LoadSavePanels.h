@@ -79,10 +79,10 @@ BPMSavePanel(share *sh);
 //virtual void SelectionChanged();
 share *shared;
 
-//OneThumbView *tab_th_views[MAX_THUMBS];
-//int32 thumb_amount;
-//void UpdateThumbs();
-//entry_ref old_dir_ref,the_active_ref;
+OneThumbView *tab_th_views[MAX_THUMBS];
+int32 thumb_amount;
+void UpdateThumbs();
+entry_ref old_dir_ref,the_active_ref;
 
 ThumbView* fond_thumb;
 

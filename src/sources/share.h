@@ -1,43 +1,38 @@
 #ifndef SHARE_TRUC_H
 #define SHARE_TRUC_H
 
-//---------------------------------
 #include "all_includes.h"
-//---------------------------------f
-
 #include "BPMImage.h"
 
 extern BubbleHelper bb_help;
+
+#define IMAGE_NUMBER_MAX 2048
 	
 class share
 {
    public:
    
-   share();    //constructeur
+   share();
 
-	//pour Thumbnails (load et save)
+	//for Thumbnails
     int32 current_select_thumb;	
 	DThumbnail *thumbnail;
 
-//---------------------------------------------------------------------------------
-	
+
 	uint8 *the_bitmap_bits,*undo_bitmap_bits;
 	uint8 *mask_bits,*mask_work_bits;
     uint8 *the_brush_bits;
 
-//---------------------------------------------------------------------------------
+
    pattern stripes;
   
-   BPMImage *les_images[2048];
+   BPMImage *les_images[IMAGE_NUMBER_MAX];
    BPMImage *act_img;
    Layer *act_lay;
    
    int16 active_image;
    int16 image_amount; //surtout pas unsigned!!!
 
-//---------------------------------------------------------------------------------
-
-	
    bool brush_is_perso;
    uint16 brush_x,brush_y,brush_rayon_x,brush_rayon_y;
    uint16 paper_x, paper_y;   
@@ -50,13 +45,13 @@ class share
 
    uint8 active_tool,previous_tool;
    uint8 paint_mode;
-   uint8 paint_transparency; //0 à 100
-   uint8 hardness ;	// 0 à 100
+   uint8 paint_transparency;
+   uint8 hardness ;
    float pressure;
 
 	rgb_color fore_color;
 	rgb_color back_color;
-	rgb_color picker_color; //seulement utilisé par picker pendant affichage
+	rgb_color picker_color;
 	BBitmap *the_brush,*the_brush_24,*paper,*paper_24;
 	 
 	void CreateNewImage(const char *name,int16 w, int16 h);

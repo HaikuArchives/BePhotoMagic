@@ -57,18 +57,18 @@ void SaveAsPanel::SaveAs( BBitmap *bitmap)
 toBeSaved = bitmap;
 
 ThePrefs.no_pictures_left=ON; // stop display
-the_thumbnail = new DThumbnail(toBeSaved , true); // the thumbnail will be dithered 
+//the_thumbnail = new DThumbnail(toBeSaved , true); // the thumbnail will be dithered 
 ThePrefs.no_pictures_left=OFF; // reactivate display
-
+/*
 float height=0;
 //DISABLED FOR POWERPC (PPC) since thumbnail doesn't work?
 height = the_thumbnail->Bitmap()->Bounds().Height()+4;
 
 if (height < 74)
 	height=74;
-							
+*/							
 panel->Window()->Lock();
-
+/*
 //find pointer to background view
 BView *background = panel->Window()->ChildAt(0);
 
@@ -78,10 +78,11 @@ background->MoveBy(0,height);
 		
 BRect limit = background->Bounds();
 limit.bottom=height;
-fond_thumb = new ThumbView(limit,shared);
+//fond_thumb = new ThumbView(limit,shared);
+*/
 panel->SetRefFilter(new ImgRefFilter(shared));
 
-panel->Window()->AddChild(fond_thumb);
+//panel->Window()->AddChild(fond_thumb);
 panel->Window()->Unlock();
 
 ThePrefs.save_panel_open=true;
@@ -172,7 +173,7 @@ char str[512];
 					strcat(shared->act_img->full_path,"/");
 					strcat(shared->act_img->full_path,message->FindString("name"));
 	
-
+/*
 					if (ThePrefs.save_with_thumb==B_CONTROL_ON && the_thumbnail->Bitmap())    // will be NULL if the thumbnail couldn't be created 
 						{ 
 	 					  	node.SetTo(shared->act_img->full_path); 
@@ -181,7 +182,7 @@ char str[512];
     						the_thumbnail->WriteMiniIconAttribute(&node); 
     						the_thumbnail->WriteResolutionAttributes(&node); 
 						} 
-						
+*/						
 					//update window title with file's name
 					util.mainWin->PostMessage(new BMessage(UPDATE_TITLE)); 
 						
@@ -195,7 +196,7 @@ char str[512];
 			break;
 		
 		case M_SAVEASPANEL_TYPE:
-			//beep();beep();beep();
+			beep();beep();beep();
 			saveTypeWanted = message->FindInt32("type_code");
 			break;
 

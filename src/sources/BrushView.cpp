@@ -51,7 +51,6 @@ void BrushSelectorView::Draw(BRect rect)
 				);
 //	BitModView->Sync();
 	DrawBitmap(BrushBitmap,BitModView->Bounds());
-	BrushBitmap->Unlock();
 }
 
 void BrushSelectorView::MessageReceived(BMessage *msg)

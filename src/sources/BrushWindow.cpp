@@ -214,51 +214,51 @@ char str[255];
 	{
 	
 		case B_KEY_DOWN:
-		util.mainWin->PostMessage(msg);
-		break;
+			util.mainWin->PostMessage(msg);
+			break;
 		
 		case DRAW_PERSO_BRUSHES:
-		//clear old squares and draw the new one.
-		i=0;		
-		do 
-		{	pr_br_view->tab_brush_views[i]->active=false;
-			pr_br_view->tab_brush_views[i]->Invalidate();
-			pr_br_view->tab_brush_views[i]->Draw(pr_br_view->tab_brush_views[i]->Bounds());
+			//clear old squares and draw the new one.
+			i=0;		
+			do 
+			{	pr_br_view->tab_brush_views[i]->active=false;
+				pr_br_view->tab_brush_views[i]->Invalidate();
+				pr_br_view->tab_brush_views[i]->Draw(pr_br_view->tab_brush_views[i]->Bounds());
 			
-		} while(i++ != pr_br_view->last_brush-1);
+			} while(i++ != pr_br_view->last_brush-1);
 
-		msg->FindInt32("active",&act);	
+			msg->FindInt32("active",&act);	
 		
-		if (act!=TEMP_BRUSH_VALUE)
-		{
-			pr_br_view->tab_brush_views[act]->active=true;
-			pr_br_view->tab_brush_views[act]->Invalidate();
-			pr_br_view->tab_brush_views[act]->Draw(pr_br_view->tab_brush_views[act]->Bounds());
-		}
-		pr_br_view->Draw(Bounds());
+			if (act!=TEMP_BRUSH_VALUE)
+			{
+				pr_br_view->tab_brush_views[act]->active=true;
+				pr_br_view->tab_brush_views[act]->Invalidate();
+				pr_br_view->tab_brush_views[act]->Draw(pr_br_view->tab_brush_views[act]->Bounds());
+			}
+			pr_br_view->Draw(Bounds());
 		
-		PostMessage(new BMessage(BRUSH_TITLE));
-		break;
+			PostMessage(new BMessage(BRUSH_TITLE));
+			break;
 		
 		case BRUSH_TITLE:
-		sprintf(str, Language.get("BRUSHES"));
+			sprintf(str, Language.get("BRUSHES"));
 
 		
-		if (shared->brush_is_perso==true)
-		{
-			strcat(str," – ");
-			if (act!=TEMP_BRUSH_VALUE)
-				strcat(str,	pr_br_view->tab_brush_views[shared->current_perso_brush]->name);
-			else strcat(str,	Language.get("TEMP_BRUSH"));
-		}
+			if (shared->brush_is_perso==true)
+			{
+				strcat(str," – ");
+				if (act!=TEMP_BRUSH_VALUE)
+					strcat(str,	pr_br_view->tab_brush_views[shared->current_perso_brush]->name);
+				else strcat(str,	Language.get("TEMP_BRUSH"));
+			}
 			
-		SetTitle(str);
-		break;
+			SetTitle(str);
+			break;
 		
 		case INIT_PERSO:
 			pr_br_view->AddBrushes();
 			PostMessage(new BMessage(BRUSH_TITLE));
-		break;
+			break;
 		
 	default:
 		BWindow::MessageReceived( msg );

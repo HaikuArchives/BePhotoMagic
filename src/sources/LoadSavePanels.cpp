@@ -22,7 +22,7 @@ BPMOpenPanel::BPMOpenPanel(share *sh):
  	Window()->ResizeTo(350+16+((96+8)*3),Window()->Bounds().Height());
 
 	// make a space on top for preview
-	background->ResizeTo(350,background->Bounds().Height());
+//	background->ResizeTo(350,background->Bounds().Height());
 		
 	//center after enlarging
 	BRect x = util.find_win_pos(350+16+((96+8)*3),Window()->Bounds().Height(),util.mainWin);
@@ -44,11 +44,11 @@ BPMOpenPanel::BPMOpenPanel(share *sh):
 
 	//by default, open with thumbnail
 	r.Set(180,18,180+100,18+12);
-	check_thumb = new BCheckBox(r,"check_th",Language.get("SHOW_THUMBNAIL"),new BMessage(SHOW_THUMB_CHANGED),B_FOLLOW_TOP | B_FOLLOW_LEFT,B_WILL_DRAW);
+/*	check_thumb = new BCheckBox(r,"check_th",Language.get("SHOW_THUMBNAIL"),new BMessage(SHOW_THUMB_CHANGED),B_FOLLOW_TOP | B_FOLLOW_LEFT,B_WILL_DRAW);
 	check_thumb->SetValue(ThePrefs.show_thumbs);
 	check_thumb->SetTarget(util.mainWin);
 	background->AddChild(check_thumb);
-		
+*/		
 	//by default, open showing only images
 	r.OffsetBy(0,15);
 	check_only_images = new BCheckBox(r,"check_th",Language.get("ONLY_IMG"),new BMessage(ONLY_IMG_CHANGED),B_FOLLOW_TOP | B_FOLLOW_LEFT,B_WILL_DRAW);
@@ -57,7 +57,7 @@ BPMOpenPanel::BPMOpenPanel(share *sh):
 	background->AddChild(check_only_images);
 
 	// 'Create Thumbnail' button
-	r.left =4;
+/*	r.left =4;
 	r.right = 140;
 	r.bottom = background->Bounds().bottom-14;
 	r.top = r.bottom-20;
@@ -65,13 +65,13 @@ BPMOpenPanel::BPMOpenPanel(share *sh):
 	BButton *create_thumbnail_button = new BButton(r,"crt",Language.get("CREATE_THUMBNAIL"), new BMessage(CREATE_THUMBS),B_FOLLOW_BOTTOM | B_FOLLOW_LEFT,B_WILL_DRAW);
 	create_thumbnail_button->SetTarget(util.mainWin);
 	background->AddChild(create_thumbnail_button);
-
+*/
   	background->Invalidate();
 	background->Draw(background->Bounds());
 	Window()->Unlock();
 		
 	SetRefFilter(new ImgRefFilter(shared));
-	thumb_amount=-1;
+//	thumb_amount=-1;
 }			
 
 
@@ -100,9 +100,9 @@ if (height < 74)
 	height=74; 	
 
 Window()->Lock();
-BView *background = Window()->ChildAt(0); //trouve view backgd c'est la premiere (0)
+BView *background = Window()->ChildAt(0); //make sure background layer is first
 
-background->ResizeBy(0,height*-1); //un peu de place en haut... pour la Preview
+background->ResizeBy(0,height*-1);
 background->MoveBy(0,height);
 		
 BRect limit = background->Bounds();
@@ -163,7 +163,7 @@ format_menu->SetTargetForItems(util.mainWin);
 	
 
 BRect rect;
-//je me base sur les coordonnées de ces view pour trouver ou caser mon menu déroulant
+//use view coordinates to set base for drop-down menu
 BRect taille=background->Bounds();
 float x_center=taille.right-100;
 
@@ -356,7 +356,7 @@ UpdateThumbs();
 }
 
 void BPMOpenPanel::UpdateThumbs()
-{
+{/*
 Window()->Lock();
 
 //erase old thumbnails
@@ -480,19 +480,19 @@ if (ThePrefs.show_thumbs==B_CONTROL_ON)
 	Window()->Unlock();
 		
 }//end if checkbox on
-
+*/
 }
 
 void BPMOpenPanel::ClearThumbSelection()
 {
-	if (thumb_amount>-1)
+/*	if (thumb_amount>-1)
 	{
 		for (int32 i = 0;  i!=thumb_amount+1; i++)  
 		{
 			tab_th_views[i]->previous_active = tab_th_views[i]->active;
 			tab_th_views[i]->active=false;
 		}
-	}
+	}*/
 }
 
 void BPMOpenPanel::SelectFromThumb(int32 number)
@@ -511,7 +511,7 @@ void BPMOpenPanel::SelectFromThumb(int32 number)
 
 void BPMOpenPanel::SelectionDone()
 {
-	if (thumb_amount>-1)
+/*	if (thumb_amount>-1)
 	{
 		for (int32 i = 0;  i!=thumb_amount+1; i++) 
 		{
@@ -522,7 +522,7 @@ void BPMOpenPanel::SelectionDone()
 				tab_th_views[i]->Invalidate();
 			Window()->Unlock();
 		}
-	}
+	}*/
 }
 
 
@@ -534,7 +534,7 @@ void BPMOpenPanel::SelectionChanged()
 	GetPanelDirectory(&old_dir_ref);
 
 	 
- 	if (changed_by_thumb==false)
+/* 	if (changed_by_thumb==false)
  	{
 		util.mainWin->PostMessage(DEACTIVATE_THUMB_IMG);
 		entry_ref tmp_ref;
@@ -561,7 +561,7 @@ void BPMOpenPanel::SelectionChanged()
 	}//end if changed by thumb = false
 	
 	changed_by_thumb=false;
-
+*/
 }
 
 ImgRefFilter::ImgRefFilter(share *sh)  :  BRefFilter() 

@@ -59,15 +59,15 @@ high_select_color.alpha= 0;
 //cursor_ptr = &simple_cross[0];
 
 active_translator=0;
-
 hardness =0;
-
-
 brush_is_perso=false;
+
+// zero out pointers for images just for safety
+int32 i;
+for(i=0;i<IMAGE_NUMBER_MAX;i++)
+	les_images[i]=NULL;
+
 }
-
-
-
 
 
 void share::EmptyPaper()

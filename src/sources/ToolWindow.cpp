@@ -282,8 +282,8 @@ void ToolWindow::CreateButton(char nm[255],char nm2[255])
 	BRect rect;
 	rect.Set(0,0, BUTTON_X, BUTTON_Y );
 					
-	downBitmap = BTranslationUtils::GetBitmap('RAWT',nm);
-	upBitmap = BTranslationUtils::GetBitmap('RAWT',nm2);
+	downBitmap = BTranslationUtils::GetBitmap('bits',nm);
+	upBitmap = BTranslationUtils::GetBitmap('bits',nm2);
 
 	//extra security
 	if (upBitmap==NULL) upBitmap = new BBitmap(rect, B_RGB32);

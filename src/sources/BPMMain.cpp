@@ -1,6 +1,5 @@
 #include "BPMMain.h"
-#include <Debug.h>
-#define DEBUG
+#include "BugOutDef.h"      
 
 int main()
 {	
@@ -97,31 +96,27 @@ mainWindow->Unlock();
 // Shutdown the image manipulation library
 Image_Shutdown();
 }
-      
-void BPMApplication::RefsReceived(BMessage *le_message)
-{
 
-//**************************************************************
-// LOAD
-//**************************************************************
-	
-	
+void BPMApplication::RefsReceived(BMessage *le_message)
+{		// Load all selected files
 uint32 type; 
 int32 count; 
 entry_ref ref; 
        
 le_message->GetInfo("refs", &type, &count); 
 	   				
+BugOut db("BMApp::RefsReceived");
 	  		 
 for ( long i = --count; i >= 0; i-- )
-{
+{	
 	le_message->FindRef("refs", i, &ref); 
-			   			  		
+	
 	BEntry entry(&ref);
 	BPath the_path; 
 	char txt[NAME_SIZE];
 	entry.GetPath(&the_path);
 	sprintf(txt,the_path.Path());
+	db.SendMessage("GetPath passed");
 			
 	//see if file is already loaded somewhere (loose translation)
 	int16 ii=-2; //if you start with 0 and there are no images, loop never exits
@@ -133,14 +128,15 @@ for ( long i = --count; i >= 0; i-- )
 		 		exists =i; 
 		}
 	} while (ii++ != shared->image_amount);
+	db.SendMessage("image existence check passed");
 			
 	if (exists != -100)
 	{
 		BAlert *alert = new BAlert(NULL,Language.get("ALREADY_LOADED"), 
     			Language.get("YES"),  Language.get("NO"),NULL,B_WIDTH_FROM_WIDEST,B_WARNING_ALERT); 
    		int32 button_index;
-   				
-   
+
+		db.SendMessage("Somehow ended up in File Loaded branch");
    		switch(button_index = alert->Go())
    		{
    			//buttons have value 0,1, or 2 - 3 buttons max for a BAlert
@@ -159,9 +155,11 @@ for ( long i = --count; i >= 0; i-- )
 	}
 	else 	// load file
 	{
+		db.SendMessage("Load file branch entered");
 		util.show_progress_load = ON;
 		//util.mainWin->PostMessage(SHOW_PROGRESS_WIN);
 		shared->LoadNewImage(txt);	 //revert mode =OFF
+		db.SendMessage("LoadNewImage passed");
 	}
 
 	mainWindow->Lock();
@@ -175,7 +173,6 @@ for ( long i = --count; i >= 0; i-- )
 void BPMApplication::MessageReceived(BMessage *msg)
 {
 BRect r;
-
 	switch (msg->what)
 	{
 		case B_REFS_RECEIVED:
@@ -263,7 +260,7 @@ if (util.StoreTranslatorBitmap(shared->act_img->display_bitmap,
 				txt, shared->active_translator) == B_OK) 
 {
 
-	if (ThePrefs.save_with_thumb==B_CONTROL_ON)
+/*	if (ThePrefs.save_with_thumb==B_CONTROL_ON)
 	{
 		if (shared->thumbnail->Bitmap())    // will be NULL if the thumbnail couldn't be created 
 		{ 
@@ -273,7 +270,7 @@ if (util.StoreTranslatorBitmap(shared->act_img->display_bitmap,
    			shared->thumbnail->WriteMiniIconAttribute(&node); 
    			shared->thumbnail->WriteResolutionAttributes(&node); 
 		} 
-	}
+	}*/
 }
 	
 shared->act_img->display_bitmap->Unlock();

@@ -36,9 +36,9 @@ sprintf(temp_name,file_name);	strcat(temp_name,"layer_mask_paint.png");
 icon_mask = util.load_bmp(temp_name);
 */
 
-icon_empty = BTranslationUtils::GetBitmap('RAWT',"layer_empty.png");
-icon_paint = BTranslationUtils::GetBitmap('RAWT',"layer_paint.png");
-icon_mask  = BTranslationUtils::GetBitmap('RAWT',"layer_mask_paint.png");
+icon_empty = BTranslationUtils::GetBitmap('bits',"layer_empty.png");
+icon_paint = BTranslationUtils::GetBitmap('bits',"layer_paint.png");
+icon_mask  = BTranslationUtils::GetBitmap('bits',"layer_mask_paint.png");
 
 // extra security
 if (icon_empty == NULL) icon_empty= new BBitmap(rect, B_RGB32);
@@ -70,8 +70,8 @@ TriangleMenuView::TriangleMenuView(BRect r,share *sh) :
 shared = sh;
 SetViewColor(216,216,216);
 
-off = BTranslationUtils::GetBitmap('RAWT',"triangle_menu.png");
-on = BTranslationUtils::GetBitmap('RAWT',"triangle_menu_p.png");
+off = BTranslationUtils::GetBitmap('bits',"triangle_menu.png");
+on = BTranslationUtils::GetBitmap('bits',"triangle_menu_p.png");
 img = off;
 
 pm = new  BPopUpMenu("", false, false, B_ITEMS_IN_COLUMN) ;
@@ -744,8 +744,8 @@ BRect rect;
 rect.Set(0,0, 16-1, 16-1);
 
 //fill bitmap
-downBitmap = BTranslationUtils::GetBitmap('RAWT',nm);
-upBitmap = BTranslationUtils::GetBitmap('RAWT',nm2);
+downBitmap = BTranslationUtils::GetBitmap('bits',nm);
+upBitmap = BTranslationUtils::GetBitmap('bits',nm2);
 
 			
 //extra security

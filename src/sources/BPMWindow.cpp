@@ -194,10 +194,10 @@ scroll_view = new BScrollView("scroll view", back_view, B_FOLLOW_ALL, B_WILL_DRA
 
 AddChild(scroll_view);
 
-/*
-back_bmp = BTranslationUtils::GetBitmap('RAWT',"back_text.png");
-if (back_bmp!=NULL) inside_view->SetViewBitmap(back_bmp);
-*/
+
+//back_bmp = BTranslationUtils::GetBitmap('bits',"back_text.png");
+//if (back_bmp!=NULL) inside_view->SetViewBitmap(back_bmp);
+
 
 //Init the two scrollbar quick-access pointers 
 
@@ -393,7 +393,16 @@ switch (msg->what)
 			}
 		}
 		break;
-		
+	
+	case MENU_FILE_QUIT:
+		if (ThePrefs.no_pictures_left==ON)
+		{	QuitRequested();
+		}
+		else
+		{	PostMessage(MENU_CLOSE);
+		}
+		break;
+     	
 	case MENU_PREFS:
 		rect = ThePrefs.pref_frame;
 		if (ThePrefs.pref_win_open==false)
@@ -951,10 +960,10 @@ switch (msg->what)
 		} 
 		else
 		{ 
-			ppWindow = new PaperWindow(ThePrefs.paper_frame,Language.get("PAPERS"),shared);  
+/*			ppWindow = new PaperWindow(ThePrefs.paper_frame,Language.get("PAPERS"),shared);  
 			ppWindow->Show();
 			shared->display_menu->ItemAt(1)->SetMarked(true);
-		}
+*/		}
 		break;
 		
 	case SHOW_LAYER_WIN:
