@@ -66,41 +66,55 @@ le_point.y = floor(le_point.y /shared->act_img->zoom_level);
 if (le_point.x > 0 && le_point.y > 0 && le_point.x < shared->act_img->pix_per_line && le_point.y < shared->act_img->pix_per_row)
 {
 
-//Find edges for deborder step
-//do this first because we can have the brush overlap both edges if the image
-//is very small
+//Find edges for deborder step do this first because we can have 
+// the brush overlap both edges if the image is very small
 
 //Left-Right
-if (le_point.x < shared->brush_rayon_x) to_cut_left = int16 (shared->brush_rayon_x - le_point.x -1); //moins parce-que sinon il y a un pix de vide... 
-	else to_cut_left   = -1;
-if (le_point.x > shared->act_img->pix_per_line-shared->brush_rayon_x-1) to_cut_right   = int16(shared->brush_x-(shared->brush_rayon_x-(shared->act_img->pix_per_line-le_point.x-2)));
-	else to_cut_right   = shared->brush_x;
+if (le_point.x < shared->brush_rayon_x)
+	to_cut_left = int16 (shared->brush_rayon_x - le_point.x -1);
+else
+	to_cut_left   = -1;
+	
+if (le_point.x > shared->act_img->pix_per_line - shared->brush_rayon_x-1) 
+	to_cut_right   = int16( shared->brush_x- (shared->brush_rayon_x- (shared->act_img->pix_per_line-le_point.x-2) ) );
+else
+	to_cut_right   = shared->brush_x;
 
 //Top-bottom
-if (le_point.y < shared->brush_rayon_y) to_cut_top = int16 (shared->brush_rayon_y - le_point.y-1); //moins parce-que sinon il y a un pix de vide... 
-else to_cut_top   = -1;
+if (le_point.y < shared->brush_rayon_y)
+	to_cut_top = int16 (shared->brush_rayon_y - le_point.y-1);
+else
+	to_cut_top   = -1;
 
-if (le_point.y > shared->act_img->pix_per_row-shared->brush_rayon_y-1) to_cut_bottom   = int16(shared->brush_y-(shared->brush_rayon_y-(shared->act_img->pix_per_row-le_point.y-2)));
-	else to_cut_bottom   = shared->brush_y;
+if (le_point.y > shared->act_img->pix_per_row-shared->brush_rayon_y-1) 
+	to_cut_bottom   = int16(shared->brush_y-(shared->brush_rayon_y-(shared->act_img->pix_per_row-le_point.y-2)));
+else 
+	to_cut_bottom   = shared->brush_y;
 
 
 
 le_point.x -= 	shared->brush_rayon_x; //stick to brush center
+
 // in bottom right considering that a click in the middle is needed to draw each side(?)
 le_point.y -= 	shared->brush_rayon_y;
 
 BRect to_update;
-to_update.Set(le_point.x, le_point.y,le_point.x+shared->brush_x, le_point.y+shared->brush_y); 
+
+to_update.Set(le_point.x, le_point.y,
+				le_point.x+shared->brush_x, le_point.y+shared->brush_y); 
 
 
-offset    = uint32 ((le_point.y * shared->act_img->pix_per_line)+le_point.x); //pixel de départ
-offset_st = uint32 (((le_point.y+shared->stamp_offset.y) * shared->act_img->pix_per_line)+(le_point.x+shared->stamp_offset.x)); //pixel du stamp
+offset    = uint32 (( le_point.y * shared->act_img->pix_per_line) + le_point.x);
+
+// offset for the stamp tool
+offset_st = uint32 ( (  (le_point.y+shared->stamp_offset.y) 
+					* shared->act_img->pix_per_line)
+					+ (le_point.x+shared->stamp_offset.x));
+// offset for papers
 uint32 offset_paper = uint32 (
-					  ((le_point.y- (floor(le_point.y/shared->paper_y)*shared->paper_y)) *shared->paper_x ) //les lignes
-					+ le_point.x- (floor(le_point.x/shared->paper_x)*shared->paper_x) //le x
+					  ((le_point.y- (floor(le_point.y/shared->paper_y)*shared->paper_y)) *shared->paper_x )
+					+ le_point.x- (floor(le_point.x/shared->paper_x)*shared->paper_x)
 							);
-
-
 
 l_bits 	  = shared->bits  +(offset    * shared->nb_bytes);
 l_wbits   = shared->wbits +(offset    * shared->nb_bytes);
@@ -115,7 +129,8 @@ line_length     = shared->act_img->pix_per_line - shared->brush_x;
 line_length_24  = line_length*4;
 
 
-//float t =  shared->paint_transparency / shared->pressure; //c'est la transp, pas l'opacité donc on divise
+//transparency, not opacity - so one divides
+//float t =  shared->paint_transparency / shared->pressure;
 //uint8 tr = uint8(float(shared->pressure *100));
 //uint8 paint_transp =  TheTables.tab_pourcent_x_val[transp][shared->paint_transparency];
 
@@ -124,10 +139,8 @@ uint8 paint_transp = uint8(floor(yxy));
 //printf("\nPressure: %.1f x Transp: %ld  = %ld",shared->pressure, shared->paint_transparency,paint_transp);
 
 
-
 if (ThePrefs.mask_mode==ON)
 {
-
 	// if we're working with the stamp in mask mode
 	if (shared->active_tool==STAMP)
 	{	pos_y = 0;
@@ -290,10 +303,12 @@ else 	//not in mask mode
 
 	} // end if shared_active
 
-	else //Normal mode, stamp tool
+	else //Normal mode, brush
 	{
 		pos_y = 0;
-		uint16 paper_pos_y = 0; uint16 paper_pos_x = 0;
+		uint16 paper_pos_y = 0;
+		uint16 paper_pos_x = 0;
+		
 		while (pos_y != shared->brush_y)
 		{   
 			if ((pos_y > to_cut_top) && (pos_y < to_cut_bottom) )
@@ -301,7 +316,6 @@ else 	//not in mask mode
 	   			pos_x=0;
 				while (pos_x != shared->brush_x)
         	   	{ 
-			
 					transp = TheTables.tab_transp[paint_transp][*l_brush_bits];
   		  			if ( ThePrefs.mask_activated == ON )
   		  				transp = TheTables.tab_mask_transp[transp][*l_mask_ptr];
@@ -315,8 +329,10 @@ else 	//not in mask mode
   			      		switch(shared->paint_mode)
            				{
            					case NORMAL:
-		        				*l_bits  =   TheTables.tab_addition[TheTables.tab_normal[transp][shared->col_blue]]  [TheTables.tab_pourcent_x_val[transp][*l_bits]]; l_bits++;
-								*l_bits  =   TheTables.tab_addition[TheTables.tab_normal[transp][shared->col_green]] [TheTables.tab_pourcent_x_val[transp][*l_bits]]; l_bits++;
+		        				*l_bits  =   TheTables.tab_addition[TheTables.tab_normal[transp][shared->col_blue]]  [TheTables.tab_pourcent_x_val[transp][*l_bits]];
+		        				l_bits++;
+								*l_bits  =   TheTables.tab_addition[TheTables.tab_normal[transp][shared->col_green]] [TheTables.tab_pourcent_x_val[transp][*l_bits]];
+								l_bits++;
 								*l_bits  =   TheTables.tab_addition[TheTables.tab_normal[transp][shared->col_red]]   [TheTables.tab_pourcent_x_val[transp][*l_bits]];
 
 /*           					*l_bits  = *l_paper; l_bits++;
@@ -326,40 +342,52 @@ else 	//not in mask mode
 		 						break;
 	 						
 		 					case LIGHTEN:
-			 					*l_bits  =   TheTables.tab_lighten[transp][*l_bits]  +  TheTables.tab_pourcent_x_val[transp][*l_bits]; l_bits++;
-								*l_bits  =   TheTables.tab_lighten[transp][*l_bits]  +  TheTables.tab_pourcent_x_val[transp][*l_bits]; l_bits++;
+			 					*l_bits  =   TheTables.tab_lighten[transp][*l_bits]  +  TheTables.tab_pourcent_x_val[transp][*l_bits];
+			 					l_bits++;
+								*l_bits  =   TheTables.tab_lighten[transp][*l_bits]  +  TheTables.tab_pourcent_x_val[transp][*l_bits];
+								l_bits++;
 								*l_bits  =   TheTables.tab_lighten[transp][*l_bits]  +  TheTables.tab_pourcent_x_val[transp][*l_bits];
 	 							break;
 	 			
 		 					case DARKEN:
-			 					*l_bits  =   TheTables.tab_darken[transp][*l_bits]  +  TheTables.tab_pourcent_x_val[transp][*l_bits]; l_bits++;
-								*l_bits  =   TheTables.tab_darken[transp][*l_bits]  +  TheTables.tab_pourcent_x_val[transp][*l_bits]; l_bits++;
+			 					*l_bits  =   TheTables.tab_darken[transp][*l_bits]  +  TheTables.tab_pourcent_x_val[transp][*l_bits];
+			 					l_bits++;
+								*l_bits  =   TheTables.tab_darken[transp][*l_bits]  +  TheTables.tab_pourcent_x_val[transp][*l_bits];
+								l_bits++;
 								*l_bits  =   TheTables.tab_darken[transp][*l_bits]  +  TheTables.tab_pourcent_x_val[transp][*l_bits];
 	 							break;
 	 						
 		 					case MULTIPLY:
 			 					tmp = TheTables.tab_multiply[shared->col_blue][*l_bits];
-		 						*l_bits  =   TheTables.tab_normal[transp][tmp]  +  TheTables.tab_pourcent_x_val[transp][*l_bits]; l_bits++;
+		 						*l_bits  =   TheTables.tab_normal[transp][tmp]  +  TheTables.tab_pourcent_x_val[transp][*l_bits];
+		 						l_bits++;
 								tmp = TheTables.tab_multiply[shared->col_green][*l_bits];
-	 							*l_bits  =   TheTables.tab_normal[transp][tmp]  +  TheTables.tab_pourcent_x_val[transp][*l_bits]; l_bits++;
+	 							*l_bits  =   TheTables.tab_normal[transp][tmp]  +  TheTables.tab_pourcent_x_val[transp][*l_bits];
+	 							l_bits++;
 								tmp = TheTables.tab_multiply[shared->col_red][*l_bits];
 	 							*l_bits  =   TheTables.tab_normal[transp][tmp]  +  TheTables.tab_pourcent_x_val[transp][*l_bits];
 		 						break;
 
 							case COMBINE:
 			 					tmp = TheTables.tab_combine[shared->col_blue][*l_bits];
-		 						*l_bits  =   TheTables.tab_normal[transp][tmp]  +  TheTables.tab_pourcent_x_val[transp][*l_bits]; l_bits++;
+		 						*l_bits  =   TheTables.tab_normal[transp][tmp]  +  TheTables.tab_pourcent_x_val[transp][*l_bits];
+		 						l_bits++;
 								tmp = TheTables.tab_combine[shared->col_green][*l_bits];
-	 							*l_bits  =   TheTables.tab_normal[transp][tmp]  +  TheTables.tab_pourcent_x_val[transp][*l_bits]; l_bits++;
+	 							*l_bits  =   TheTables.tab_normal[transp][tmp]  +  TheTables.tab_pourcent_x_val[transp][*l_bits];
+	 							l_bits++;
 								tmp = TheTables.tab_combine[shared->col_red][*l_bits];
 	 							*l_bits  =   TheTables.tab_normal[transp][tmp]  +  TheTables.tab_pourcent_x_val[transp][*l_bits];
 		 						break;
 	 						
 	 						case DIFFERENCE:
 			 					tmp = TheTables.tab_difference[shared->col_blue][*l_wbits];
-			 					*l_bits  =   TheTables.tab_normal[transp][tmp]  +  TheTables.tab_pourcent_x_val[transp][*l_bits]; l_bits++; l_wbits++;
+			 					*l_bits  =   TheTables.tab_normal[transp][tmp]  +  TheTables.tab_pourcent_x_val[transp][*l_bits];
+			 					l_bits++; 
+			 					l_wbits++;
 								tmp = TheTables.tab_difference[shared->col_green][*l_wbits];
-	 							*l_bits  =   TheTables.tab_normal[transp][tmp]  +  TheTables.tab_pourcent_x_val[transp][*l_bits]; l_bits++; l_wbits++;
+	 							*l_bits  =   TheTables.tab_normal[transp][tmp]  +  TheTables.tab_pourcent_x_val[transp][*l_bits];
+	 							l_bits++;
+	 							l_wbits++;
 								tmp = TheTables.tab_difference[shared->col_red][*l_wbits];
 	 							*l_bits  =   TheTables.tab_normal[transp][tmp]  +  TheTables.tab_pourcent_x_val[transp][*l_bits]; 
 		 						break;
@@ -372,13 +400,13 @@ else 	//not in mask mode
 	 					l_wbits+=2;
 	 				}
 
-			   		if (paper_pos_x==shared->paper_x)
+/*			   		if (paper_pos_x==shared->paper_x)
 			   		{	paper_pos_x=0;
 			   			l_paper -= shared->paper_x;
 			   		}
 			   		paper_pos_x++; l_paper++;
 
-		
+*/		
 	    			l_bits    += 2;   l_wbits+=2;
     				l_mask_ptr++;
   					l_brush_bits++;
@@ -1367,11 +1395,16 @@ if (shared->act_img!=NULL)
 		Draw(BRect(old_pos_moved.x-old_x_size , old_pos_moved.y-old_y_size,
 				old_pos_moved.x+old_x_size , old_pos_moved.y+old_y_size));
 
-				
-		if (shared->brush_x < 100)	// not real big - draw outline
-		{
-	    	SetDrawingMode(B_OP_INVERT); 
-			StrokeEllipse(point,shared->brush_rayon_x,shared->brush_rayon_y);
+		if (shared->brush_x <= 100)	// not real big - draw outline
+		{	SetDrawingMode(B_OP_INVERT);
+			if(shared->brushtype==BRUSH_TYPE_RECT)
+			{	int32 	px=(int32)point.x,
+						py=(int32)point.y;
+				StrokeRect( BRect(px - shared->brush_rayon_x, py - shared->brush_rayon_y,
+								px + shared->brush_rayon_x, py + shared->brush_rayon_y));
+			}
+			else
+				StrokeEllipse(point,shared->brush_rayon_x,shared->brush_rayon_y);
 		}		
 		else
 		{
@@ -1647,13 +1680,15 @@ void  PicView::PrepareFilter()
 			selected_zone = shared->FindSelectedRect(); 
 			//1. copy image to a working bitmap
 			util.sel_pic = new BBitmap(BRect(0,0, selected_zone.Width(),selected_zone.Height()), B_RGB32);
-			ln_width = util.sel_pic->Bounds().Width()*4;
+//			ln_width = util.sel_pic->Bounds().Width()*4;
+			ln_width = util.sel_pic->Bounds().IntegerWidth()*4;
 		}
 		else
 		{
 			selected_zone = shared->act_lay->img->Bounds(); 
 			util.sel_pic = new BBitmap(BRect(0,0, selected_zone.Width(),selected_zone.Height()), B_GRAY8);
-			ln_width = util.sel_pic->Bounds().Width();
+//			ln_width = util.sel_pic->Bounds().Width();
+			ln_width = util.sel_pic->Bounds().IntegerWidth();
 		}
 		
 		CopyUnfiltered();
@@ -1929,8 +1964,10 @@ uint8 *pic_bits = util.sel_pic_bits;
 uint8 *flipped_bits = util.sel_pic_bits;
 
 uint8 tmp0,tmp1,tmp2,tmp3;
-int32 x = selected_zone.Width()-1; 
-int32 y = selected_zone.Height()-1;
+//int32 x = selected_zone.Width()-1; 
+//int32 y = selected_zone.Height()-1;
+int32 x = selected_zone.IntegerWidth()-1; 
+int32 y = selected_zone.IntegerHeight()-1;
 int32 i,j;
 
 if (ThePrefs.mask_mode==OFF)

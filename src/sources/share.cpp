@@ -32,6 +32,7 @@ stroke=OFF;
 current_brush=16;
 current_perso_brush=0;
 current_paper=0;
+brushtype=BRUSH_TYPE_ELLIPSE;
 max_brush=2;
 max_paper=2;
 
@@ -359,7 +360,7 @@ void share::loadPaper(int16 numpaper)
     }
 	    
 }
-  
+
 void share::generateBrush(int16 size) //generate a brush of a particular size
 { 
 	brush_is_perso=false;
@@ -403,7 +404,7 @@ void share::generateBrush(int16 size) //generate a brush of a particular size
    tmp_brush->RemoveChild( &virtualView );
    tmp_brush->Unlock();
 	
-  sprintf(nom_de_brush_perso,"pas de nom de brush");
+//  sprintf(nom_de_brush_perso,"pas de nom de brush");
   UseAsBrush(tmp_brush);
 	
  // SURTOUT PAS delete tmp_brush;

@@ -108,7 +108,7 @@ BView *set_view = new BrushSelectorView(Bounds(), shared);
 set_view->SetViewColor(216,216,216);
 
 
-BTabView *tab_fond = new BTabView(Bounds(), "", B_WIDTH_AS_USUAL, B_FOLLOW_ALL, B_WILL_DRAW); 	
+BTabView *tab_fond = new BTabView(Bounds(), "", B_WIDTH_AS_USUAL, B_FOLLOW_ALL, B_WILL_DRAW | B_NAVIGABLE); 	
 tab_fond->AddTab(set_view, new BTab()); 
 tab_fond->AddTab(perso_scroll_view, new BTab()); 
 

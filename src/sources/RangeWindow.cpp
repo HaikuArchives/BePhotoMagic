@@ -40,7 +40,7 @@ void RangeWindow::MessageReceived(BMessage *msg)
 		*/
 		
 		case OK_APPLY:
-			util.mainWin->PostMessage(APPLY_FILTER);
+	//		util.mainWin->PostMessage(APPLY_FILTER);
 			Lock();
 			Close();
 			break;

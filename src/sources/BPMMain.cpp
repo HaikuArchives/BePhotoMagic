@@ -1,5 +1,4 @@
 #include "BPMMain.h"
-#include "BugOutDef.h"      
 
 int main()
 {	
@@ -32,7 +31,7 @@ BPMApplication::BPMApplication()
 	// set up a rectangle and instantiate a new window
 	
 	rect = util.find_win_pos_on_main_screen(256,48);
-	progWindow = new ProgressWindow(rect,"Progress...");
+	progWindow = new ProgressWindow(rect,"Loading...");
 	util.progress_win = progWindow;
 	progWindow->Show();
 	
@@ -56,9 +55,6 @@ BPMApplication::BPMApplication()
 
 //	mainWindow->ZoomChanged(); 
 
-	// Quick hack until I can find the definition of util.version_txt -- DarkWyrm
-//	sprintf(util.version_txt,"BePhotoMagic");
-	
 	mainWindow->PostMessage(UPDATE_TITLE);
 	
 	BMessage *mx = new BMessage(SET_CURSOR);
@@ -105,8 +101,6 @@ entry_ref ref;
        
 le_message->GetInfo("refs", &type, &count); 
 	   				
-BugOut db("BMApp::RefsReceived");
-	  		 
 for ( long i = --count; i >= 0; i-- )
 {	
 	le_message->FindRef("refs", i, &ref); 
@@ -116,7 +110,6 @@ for ( long i = --count; i >= 0; i-- )
 	char txt[NAME_SIZE];
 	entry.GetPath(&the_path);
 	sprintf(txt,the_path.Path());
-	db.SendMessage("GetPath passed");
 			
 	//see if file is already loaded somewhere (loose translation)
 	int16 ii=-2; //if you start with 0 and there are no images, loop never exits
@@ -128,7 +121,6 @@ for ( long i = --count; i >= 0; i-- )
 		 		exists =i; 
 		}
 	} while (ii++ != shared->image_amount);
-	db.SendMessage("image existence check passed");
 			
 	if (exists != -100)
 	{
@@ -136,7 +128,6 @@ for ( long i = --count; i >= 0; i-- )
     			Language.get("YES"),  Language.get("NO"),NULL,B_WIDTH_FROM_WIDEST,B_WARNING_ALERT); 
    		int32 button_index;
 
-		db.SendMessage("Somehow ended up in File Loaded branch");
    		switch(button_index = alert->Go())
    		{
    			//buttons have value 0,1, or 2 - 3 buttons max for a BAlert
@@ -155,11 +146,9 @@ for ( long i = --count; i >= 0; i-- )
 	}
 	else 	// load file
 	{
-		db.SendMessage("Load file branch entered");
 		util.show_progress_load = ON;
 		//util.mainWin->PostMessage(SHOW_PROGRESS_WIN);
 		shared->LoadNewImage(txt);	 //revert mode =OFF
-		db.SendMessage("LoadNewImage passed");
 	}
 
 	mainWindow->Lock();

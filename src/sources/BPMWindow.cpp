@@ -701,14 +701,14 @@ switch (msg->what)
 		break;
 		
 		//for the moment, no one sends this message, nor needs to
-/*	case ACTIVATE_BRUSH:
+	case ACTIVATE_BRUSH:
 		msg->FindInt32("num",&number); 
 		shared->current_brush=number;
 		shared->generateBrush(shared->current_brush);
 		PostMessage(new BMessage(UPDATE_TITLE)); 
 		PostMessage(new BMessage(TOOL_CHANGED)); 	
 		break;
-*/		
+		
 	case BRUSH_NEXT:
 		shared->generateBrush(shared->current_brush+1);
 		PostMessage(new BMessage(UPDATE_TITLE)); 
