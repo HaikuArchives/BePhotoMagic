@@ -262,7 +262,8 @@ AddChild(taille);
 char str[255]; 
 char str2[255];
 sprintf(str,Language.get("UNTITLED"));
-sprintf(str2," %d",shared->image_amount+1); 
+//sprintf(str2," %d",shared->image_amount+1); 
+sprintf(str2," %d",shared->image_amount); 
 strcat(str,str2);
 
 rect.OffsetBy(0,24);

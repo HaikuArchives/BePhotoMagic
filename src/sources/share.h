@@ -2,6 +2,7 @@
 #define SHARE_TRUC_H
 
 #include "all_includes.h"
+#include "ExeLog.h"
 #include "BPMImage.h"
 
 extern BubbleHelper bb_help;
@@ -13,9 +14,11 @@ extern BubbleHelper bb_help;
 class share
 {
    public:
-   
-   share();
 
+	ExeLog   *debuglog;
+   	share();
+	~share(void);
+	
 	//for Thumbnails
     int32 current_select_thumb;	
 	DThumbnail *thumbnail;

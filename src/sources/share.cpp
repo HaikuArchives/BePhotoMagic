@@ -6,8 +6,10 @@ share::share()
 {
 //SETTINGS
 act_img=NULL;
-active_image=-1;
-image_amount=-1; //at creation, the first gets a 0
+//active_image=-1;
+//image_amount=-1; //at creation, the first gets a 0
+active_image=0;
+image_amount=0;
    
 stamp_offset = BPoint (64,64);
 stamp_offset_changed = OFF;
@@ -70,6 +72,9 @@ for(i=0;i<IMAGE_NUMBER_MAX;i++)
 
 }
 
+share::~share(void)
+{
+}
 
 void share::EmptyPaper()
 {
@@ -89,8 +94,14 @@ if (was_active <0) was_active= 0; if (was_active > image_amount) was_active = 0;
 */
 	ThePrefs.no_pictures_left=ON; //prevent display during loading
 
-	image_amount++;
-	active_image=image_amount;
+	if(image_amount == 0)
+	{	image_amount++;
+		active_image=0;	// formerly just active_image=image_amount 
+	}
+	else
+	{	image_amount++;
+		active_image=image_amount - 1;	// formerly just active_image=image_amount 
+	}
 	is_modified[active_image]=false;
 	les_images[active_image]= new BPMImage(le_nom,w,h); 
 	act_img = les_images[active_image];
@@ -111,7 +122,7 @@ if (was_active <0) was_active= 0; if (was_active > image_amount) was_active = 0;
 */
 	image_amount++;  
 	// notice that active_image is effectively inc'ed as well
-	active_image=image_amount;
+	active_image=image_amount-1;	// formerly just active_image=image_amount
 	is_modified[active_image]=false;
 	les_images[active_image]= new BPMImage("",32,32); 
 	act_img = les_images[active_image];
@@ -122,7 +133,10 @@ if (was_active <0) was_active= 0; if (was_active > image_amount) was_active = 0;
 		return true;
 	}
 	else 
-	{	DeleteImage(image_amount);
+	{	//DeleteImage(image_amount);
+		DeleteImage(active_image);
+		active_image--;
+		image_amount--;
 		return false;
 	}
 
@@ -140,7 +154,7 @@ if (was_active <0) was_active= 0; if (was_active > image_amount) was_active = 0;
 ThePrefs.no_pictures_left=ON; //prevent display during loading
 
 	image_amount++;
-	active_image=image_amount;
+	active_image=image_amount-1;	// formerly just active_image=image_amount
 	is_modified[active_image]=false;
 	les_images[active_image]= new BPMImage(nm,32,32); 
 	act_img = les_images[active_image];
@@ -149,9 +163,7 @@ ThePrefs.no_pictures_left=ON; //prevent display during loading
 	
 	ImageAdded();
 	
-	
-	
-}	
+}
 
 void share::DeleteImage(int32 which_one)
 {
@@ -163,46 +175,55 @@ ThePrefs.no_pictures_left=ON; //prevent display while deleting
 	// Remove the image title in menu
 	if (win_menu->ItemAt(which_one)!=NULL)
 		win_menu->RemoveItem(which_one);
-
+	
 	BPMImage *old_active =les_images[which_one]; //for deleting later
-								
-	if (which_one != image_amount) //if not the last one
-	{
+
+	//if (which_one != image_amount) //if not the last one
+	if (which_one != image_amount-1) //if not the last one
+	{	
 //		reactivate=true;
 		//shift images
-		int16 i=which_one;
-			
+
+		// Theres a bug in here which
+		int16 i=which_one;			
+
 		do 
 		{	if (les_images[i+1]!= NULL)
 				les_images[i] = les_images[i+1];   
 			i++;
-		} while (i != image_amount);
-				
+		} while (i != image_amount-1);
+
 		if (win_menu->ItemAt(which_one) != NULL)
 			win_menu->ItemAt(which_one)->SetMarked(true);
+
+		image_amount--;				
+
 	}
 	else 
-	{	which_one--; 	//is the last image
+	{	//which_one--; 	//is the last image
+		active_image--; 	//is the last image
 		image_amount--;
 	}		
 	
-	if (image_amount <0)
+	//if (image_amount <0)
+	if (image_amount ==0)
 	{	ThePrefs.no_pictures_left=ON;
 		util.mainWin->PostMessage(DISABLE_ALL);
+		util.mainWin->PostMessage(UPDATE_TITLE);
 	}
 	else
-	{	win_menu->ItemAt(which_one)->SetMarked(true);
+	{	//win_menu->ItemAt(which_one)->SetMarked(true);
+		win_menu->ItemAt(active_image)->SetMarked(true);
 		ThePrefs.no_pictures_left=OFF;
 		util.mainWin->PostMessage(IMAGE_CHOSEN); //redraw newly active image
 	}
-			
+	
 	delete old_active;		
 
 //	if (reactivate==true)
 //		ThePrefs.no_pictures_left=OFF; //reactivate display
 
 	util.mainWin->Unlock();
-
 
 }
   				

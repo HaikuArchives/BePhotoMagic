@@ -119,16 +119,18 @@ for ( long i = --count; i >= 0; i-- )
 	// really speeds things up, too.
 			
 	//see if file is already loaded somewhere (loose translation)
-/*	int16 ii=-2; //if you start with 0 and there are no images, loop never exits
+/*	int16 ii=1; //if you start with 0 and there are no images, loop never exits
 	int16 exists= -100;
-	do 
-	{	//if image exists, tell the user
-		if (shared->les_images[i] != NULL)
-		{	if (strcmp(shared->les_images[i]->full_path,txt)==0) 
-		 		exists =i; 
-		}
-	} while (ii++ != shared->image_amount);
-			
+	if(shared->image_amount != 0)
+	{
+		do 
+		{	//if image exists, tell the user
+			if (shared->les_images[i] != NULL)
+			{	if (strcmp(shared->les_images[i]->full_path,txt)==0) 
+			 		exists =i-1; 
+			}
+		} while (ii++ != shared->image_amount);
+	}		
 	if (exists != -100)
 	{
 		BAlert *alert = new BAlert(NULL,Language.get("ALREADY_LOADED"), 
