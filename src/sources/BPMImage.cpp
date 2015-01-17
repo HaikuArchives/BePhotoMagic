@@ -1,906 +1,665 @@
 #include "BPMImage.h"
 
-Layer::Layer(const char *nm, BBitmap *pic, int32 le_id, int32 the_type)
-{
-	sprintf(name,nm);
-	img = pic;
-    id = le_id;
-	
-	draw_mode= NORMAL;
-	is_visible = true;
-	alpha_activated = false;
-	opacity = 100;
-	
-	if (id==0) active =true;
-	else active = false;
-	
-	x_guides_amount=0;
-	y_guides_amount=0;
+extern BWindow *bpmwindow;
 
-	guides_color.red = 10;
-	guides_color.green = 230;
-	guides_color.blue = 255;
+#ifndef MIN
+	#define MIN(a,b) (a<b)?a:b
+#endif
+#ifndef MAX
+	#define MAX(a,b) (a>b)?a:b
+#endif
 
-	layer_type = the_type;	
+BPMImage::BPMImage(void)
+{	
+	sprintf(name," ");
+	untitled=0;
+	number_layers=0;
+	active_layer=0;
+	zoom=1.0;
+	tolerance=0;
 	
-	AddHoriGuide(32);
-	AddHoriGuide(64);
-	AddHoriGuide(96);
-	AddVertiGuide(96);
-	AddVertiGuide(21);
-	AddVertiGuide(100);
+	width=0;
+	height=0;
 
+	brush_width=16;
+	brush_height=16;
+	brush_softness=0;
+	brushtype=BRUSH_TYPE_ELLIPSE;
+	brushblend=TNORMAL;
+	blendmode=TNORMAL;
+	linestep=1;
+	brushalpha=255;
+	linealpha=255;
+	userbrush=false;
+	ispainting=false;
+	save_each_paint=true;
+	typecode=0;
+
+	forecolor.red=255;
+	forecolor.green=255;
+	forecolor.blue=255;
+	forecolor.alpha=255;
+	backcolor.red=0;
+	backcolor.green=0;
+	backcolor.blue=0;
+	backcolor.alpha=255;
+	path.SetTo("");
+	undolist=new BList(255);
+	maskmode=false;
+	erasemode=false;
+	tolerance=0;
 }
 
-Layer::~Layer()
+BPMImage::BPMImage(const char *namestr, int16 imgwidth, int16 imgheight)
 {
-delete img;
-//delete name;
+	if (namestr != NULL)
+		sprintf(name, namestr);
+	else 
+		sprintf(name," ");
+	
+	untitled=0;
+	number_layers=0;
+	active_layer=0;
+	zoom=1.0;
+	
+	width=(imgwidth<1)?1:imgwidth;
+	height=(imgheight<1)?1:imgheight;
 
+	BRect bitmaprect(0,0,width-1,height-1);
+	display_bitmap=new BBitmap(bitmaprect,B_RGBA32,true);
+	selection=new BBitmap(bitmaprect,B_RGBA32,true);
+//	memset(selection->Bits(),128,selection->BitsLength());
+	SelectAll();
+	work_bitmap=new BBitmap(bitmaprect,B_RGBA32);
+	memset(work_bitmap->Bits(),0,work_bitmap->BitsLength());	// set to completely transparent
+	currentbrush=new BBitmap(BRect(0,0,31,31),B_RGBA32);
+	CreateNewLayer(SpTranslate("Background"),width,height);
+
+	bottomlayer=new BBitmap(BRect(0,0,1,1),B_RGB32);
+	toplayer=new BBitmap(BRect(0,0,1,1),B_RGB32);
+
+	brush_width=16;
+	brush_height=16;
+	brush_softness=0;
+	brushtype=BRUSH_TYPE_ELLIPSE;
+	brushblend=TNORMAL;
+	blendmode=TNORMAL;
+	stampblend=TNORMAL;
+	linestep=1;
+	brushalpha=255;
+	linealpha=255;
+	stampalpha=255;
+	userbrush=false;
+	ispainting=false;
+	save_each_paint=true;
+	typecode=0;
+
+	forecolor.red=255;
+	forecolor.green=255;
+	forecolor.blue=255;
+	forecolor.alpha=255;
+	backcolor.red=0;
+	backcolor.green=0;
+	backcolor.blue=0;
+	backcolor.alpha=255;
+	MakeBrush(brush_width,brush_height,brush_softness,brushtype);
+	path.SetTo("");
+	undolist=new BList(255);
+	maskmode=false;
+	erasemode=false;
+	tolerance=0;
 }
 
-void Layer::AddHoriGuide(int16 pos)
-{
-	x_guides[x_guides_amount]=pos;
-	x_guides_amount++;
-}
-
-void Layer::AddVertiGuide(int16 pos)
-{
-	y_guides[y_guides_amount]=pos;
-	y_guides_amount++;
-}
-	
-	
-BPMImage::BPMImage(const char *nm, int16 width, int16 height)
-{
-
-
-	undo_data = new UndoData; //is a beta structure
-	undo_data->undo_amount = -1;
-	sprintf(full_path,"");
-
-	layer_amount=-1; //0 is 1
-	id_counter =-1;
-	
-	if (nm!=NULL) sprintf(name, nm); //layer minimum
-	else sprintf(name,Language.get("UNTITLED")); 
-	
-	
-	active_layer = layer_amount;
-
-	zoom_level = 1;
-	is_redo=OFF;
-	
-	pix_per_line = width+1; 
-	pix_per_row  = height+1;
-	
-	updating=false;
-
-units = UNIT_PIXELS;
-res_units = DPI;
-resolution = 72;
-
-	
-}
 
 BPMImage::~BPMImage()
 {
-	PurgeUndo();
-	delete undo_data;
-
-	
-	int32 x=0;
-	while (x!= layer_amount+1) { delete the_layers[x]; x++; }
-    
-    delete undo_bitmap;
-    delete mask_bitmap;
-    delete mask_undo_bitmap;
-	
-}
-
-void BPMImage::SetUnitsResType(int32 un, float res, int32 res_type)
-{
-
- units = un;
- res_units = res_type;
- resolution = res;
-
-
-}
-
-status_t BPMImage::NewLayerFromBmp(BBitmap *pic)
-{
-	layer_amount++;
- 	the_layers[layer_amount]  = new Layer(ComputeLayerName(NULL, LAYER_TYPE_BITMAP),
- 								new BBitmap(pic),layer_amount,LAYER_TYPE_BITMAP);
-
-	FinishLayer();
-
- 	
-return B_OK;
-}
-
-
-status_t BPMImage::CreateNewLayer(const char *nm)
-{
-	layer_amount++;
- 	the_layers[layer_amount]  = new Layer(ComputeLayerName(&nm,LAYER_TYPE_BITMAP),
- 									new BBitmap(BRect(0,0,pix_per_line-1,pix_per_row-1),
- 									B_RGB32), layer_amount,LAYER_TYPE_BITMAP);
-	FinishLayer();
-
-return B_OK;
-
-}
-
-status_t BPMImage::CreateNewGuideLayer(const char *nm)
-{
-	layer_amount++;
- 	the_layers[layer_amount]  = new Layer(ComputeLayerName(&nm,LAYER_TYPE_GUIDE),
- 									NULL, layer_amount,LAYER_TYPE_GUIDE);
- 	FinishLayer();
-	
-return B_OK;
-
-}
-
-status_t BPMImage::LoadNewLayer(const char* nam_file)
-{
-	layer_amount++;
-	return LoadLayer(ComputeLayerName(&nam_file, LAYER_TYPE_BITMAP));
-
-return B_ERROR; //if loadlayer died
-
-}	
-	
-status_t BPMImage::LoadLayer(const char* nam_file)
-{
-	//load to layer_amount & thus revert if one did not ++ before
-
-	bool une_erreur = false;
-	
-	BAlert* alert;
-	char str[NAME_SIZE];
-   	BFile fich;
-  	if (fich.SetTo(nam_file,B_READ_ONLY) != B_NO_ERROR)
-  	{ 
-  			sprintf(str,Language.get("COULD_NOT_LOAD"));
-			strcat(str,nam_file);
-		    alert = new BAlert("",str,"Doh!"); 
-    		alert->Go();
-    		une_erreur=true;
+	if(width==0 || height==0)
+		return;
+	if(display_bitmap != NULL)
+		delete display_bitmap;
+		
+	if(work_bitmap != NULL)
+		delete work_bitmap;
+		
+	if(selection != NULL)
+		delete selection;
+		
+	if(undolist->CountItems()!=0)
+	{	int32 i;
+		UndoData *cdata;
+		
+		for(i=0;i<undolist->CountItems();i++)
+		{	
+			cdata=(UndoData *)undolist->ItemAt(i);
+			if(cdata!=NULL)
+				delete cdata;
+		}
+		undolist->MakeEmpty();
 	}
+	if(currentbrush != NULL)
+		delete currentbrush;
+	
+	for(uint8 i=0; i<number_layers; i++)
+		delete layers[i];
+	
+	if(toplayer!=NULL)
+		delete toplayer;
+	if(bottomlayer!=NULL)
+		delete bottomlayer;
+}
+
+bpm_status BPMImage::CreateNewLayer(const char *namestr, int16 laywidth, int16 layheight)
+{	
+	char tempstr[255];
+	Layer *templayer;
+	int16 i;
+		
+	if(number_layers>254)
+		return BPM_MAX_LAYERS;
+		
+	if (namestr != NULL)
+		sprintf(tempstr, namestr);
 	else 
+		sprintf(tempstr," ");
+	
+	width=(laywidth<1)?1:laywidth;
+	height=(layheight<1)?1:layheight;
+
+	// Insert the layer into the stack right above current layer if not last element
+	templayer=new Layer(tempstr,width,height,untitled++);
+
+	if(templayer == NULL)
+		return BPM_BAD_ALLOC;
+
+	if( (number_layers > 1) && (active_layer != number_layers-1) )
+	{	// Move everything up one to make room for new layer
+		for(i=number_layers; i>active_layer+1; i--)
+			layers[i]=layers[i-1];
+	}
+
+	if(number_layers>0)
+	{	layers[active_layer+1]=templayer;
+		number_layers++;
+		active_layer++;
+		p_active_layer=layers[active_layer];
+		memset((void*)p_active_layer->bitmap->Bits(),0,p_active_layer->bitmap->BitsLength()); // make transparent
+	}
+	else
+	{	layers[0]=templayer;		
+		number_layers++;
+		p_active_layer=layers[active_layer];
+	}	
+	UpdateDisplayImage(display_bitmap->Bounds());
+	NotifyLayerWindow();
+	return BPM_OK;
+}
+
+bpm_status BPMImage::NewLayerFromBitmap(const char *namestr, BBitmap *bmp)
+{	// Given a new bitmap, makes a layer which is an exact copy of the layer
+	// Any bitmaps passed to it must be deleted by the caller
+
+	bpm_status lstat;
+
+	if(bmp==NULL)
+		return BPM_BAD_PARAMETER;
+		
+	lstat=CreateNewLayer(namestr, bmp->Bounds().IntegerWidth(), bmp->Bounds().IntegerHeight());
+
+	if(lstat!=BPM_OK)	// if Create died, return the error code
+		return lstat;
+		
+	// We created a new layer, so make a copy of the bitmap and kill the blank layer
+
+	// After a Create(), new layer is active
+	delete p_active_layer->bitmap;
+	p_active_layer->bitmap=new BBitmap(bmp);
+	
+	UpdateDisplayImage(display_bitmap->Bounds());
+	NotifyLayerWindow();
+	return BPM_OK;
+
+}
+
+bool BPMImage::DeleteLayer(void)
+{	// Delete active layer
+	if(number_layers==1)
+		return false;
+
+	uint8 index=active_layer;	// to save where we are
+	delete layers[index];
+	
+	// Garbage collection if not the top image in the stack
+	if(index != number_layers-1)
+	{	for(int8 i=index; i<number_layers-1; i++)
+			layers[i]=layers[i+1];
+	}
+	number_layers--;
+	
+	// Make the nearest image active, if any
+	if(index==0)
+		active_layer=0;
+	else
+		active_layer--;
+	p_active_layer=layers[active_layer];
+
+	NotifyLayerWindow();
+	UpdateDisplayImage(display_bitmap->Bounds());
+	return true;
+}
+
+void BPMImage::SwapLayers(uint16 first, uint16 second)
+{	Layer *temp;
+
+	if( (first > number_layers-1) || (second > number_layers-1) || (second == first) )
+		return;
+	temp=layers[first];
+	layers[first]=layers[second];
+	layers[second]=temp;
+	UpdateDisplayImage(display_bitmap->Bounds());
+}
+
+void BPMImage::FlattenImage(void)
+{
+	if(number_layers==1)
+		return;
+
+	// Nuke the layer stack, save the bottom one
+	for(uint16 i=1;i<number_layers;i++)
+		delete layers[i];
+	
+	active_layer=0;
+	number_layers=1;
+	p_active_layer=layers[0];
+	
+	// Replace the layer's bitmap with our readymade composite - the display image
+	delete layers[0]->bitmap;
+	layers[0]->bitmap=new BBitmap(display_bitmap);
+	
+	NotifyLayerWindow();
+	UpdateDisplayImage(display_bitmap->Bounds());
+}
+
+void BPMImage::MakeComposite(void)
+{	// make a new layer out of the flattened image
+	char layername[255];
+	sprintf(layername,"Layer %d",untitled++);
+	NewLayerFromBitmap(layername, display_bitmap);
+}
+
+void BPMImage::DuplicateLayer(void)
+{	// Make a duplicate of the active layer
+	char layername[255];
+	sprintf(layername,"Layer %d",untitled++);
+	NewLayerFromBitmap(layername, p_active_layer->bitmap);
+}
+
+void BPMImage::MergeDown(void)
+{	// Merge active layer into one below it
+	if(active_layer==0)
+		return;
+	ApplyBitmap(p_active_layer->bitmap,p_active_layer->bitmap->Bounds(),
+		layers[active_layer-1]->bitmap,layers[active_layer-1]->bitmap->Bounds(),
+		p_active_layer->blendmode);
+	DeleteLayer();
+	NotifyLayerWindow();
+	UpdateDisplayImage(display_bitmap->Bounds());
+}
+
+void BPMImage::MakeBrush(int16 width, int16 height,int8 softness, int8 type)
+{	
+	if (width < 1) 
+		width=1;
+	if (height<1)
+		height=1;
+	
+	BRect rect; 
+	rect.Set(0,0,width-1,height-1);
+	
+	BBitmap *tmp_brush = new BBitmap(rect,B_RGB32,true);
+
+	tmp_brush->Lock(); //important!
+	BView virtualView( tmp_brush->Bounds(), NULL, B_FOLLOW_NONE, 0 );
+	tmp_brush->AddChild( &virtualView );
+
+   	//draw the brush
+   	float tmp_width = floor(width/2); //get radius
+   	float tmp_height = floor(height/2);
+   	int16 val = 255;
+   	float centerx = tmp_width;
+   	float centery = tmp_height;
+   	float step;
+   	if(softness==0)
+   		step=255;
+   	else
+   		step=255/softness;
+  
+  	BPicture *my_pict; 
+  	virtualView.BeginPicture(new BPicture);
+
+	if(type==BRUSH_TYPE_RECT)
+	{	// Set up the rectangle
+		BRect *work_rect=new BRect(tmp_brush->Bounds());
+	   	do 
+		{
+			// starts out white and goes to black
+  			virtualView.SetHighColor(val,val,val);
+   			virtualView.FillRect(*work_rect,B_SOLID_HIGH);
+	   		val -= (int16) step;
+   			if (val < 0) 
+   				val=0;
+
+			// kept around just for the loop
+	   		if(tmp_width>-1)
+		   		tmp_width--;
+   			if(tmp_height>-1)
+  				tmp_height--;
+
+			work_rect->InsetBy(1,1);   			
+		} while ( (tmp_width != -1) && (tmp_height != -1) );
+
+		delete work_rect;
+	}
+	else
 	{
-  		BBitmap *tmp; 
-  		if (( tmp= util.load_bmp(nam_file) ) != NULL)
-  		{
-  			the_layers[layer_amount]    = new Layer(ComputeLayerName(NULL,LAYER_TYPE_BITMAP),tmp, layer_amount,LAYER_TYPE_BITMAP); 
- 			active_layer = layer_amount;
-			if (layer_amount==0)
+	   	do 
+		{
+			// starts out white and goes to black
+  			virtualView.SetHighColor(val,val,val);
+   			virtualView.FillEllipse(BPoint(centerx,centery),tmp_width,tmp_height,B_SOLID_HIGH);
+	   		val -= (int16) step;
+   			if (val < 0) 
+   				val=0;
+	   		if(tmp_width>-1)
+		   		tmp_width--;
+   			if(tmp_height>-1)
+  				tmp_height--;
+   			
+		} while ( (tmp_width != -1) && (tmp_height != -1) );
+	}
+
+   	my_pict = virtualView.EndPicture();
+   	virtualView.DrawPicture(my_pict);
+	tmp_brush->RemoveChild( &virtualView );
+	tmp_brush->Unlock();
+	
+	brush_width=width;
+	brush_height=height;
+	brush_softness=softness;
+	brushtype=type;
+
+	if(currentbrush != NULL)
+		delete currentbrush;
+	currentbrush=tmp_brush;
+}
+
+void BPMImage::NotifyLayerWindow(void)
+{
+	BMessage *layermsg;
+	layermsg=new BMessage(ALTER_LAYERWINDOW_DATA);
+	
+	layermsg->AddInt8("number_layers",number_layers);
+	for(uint8 i=0;i<number_layers;i++)
+	{	if(layers[i]->visible==false)
+			layermsg->AddInt8("hidden_layer",i);
+	}
+	layermsg->AddInt8("active_layer",active_layer);
+	layermsg->AddInt8("blendmode",p_active_layer->blendmode);
+	be_app->PostMessage(layermsg);
+}
+
+bpm_status BPMImage::SaveUndo(uint8 type,BRect saverect)
+{
+	UndoData *newundo;
+	switch(type & 254)	// get just the layer type - not the mask flag
+	{
+		case UNDO_PAINTBRUSH:	// for paintbrush tool only
+		case UNDO_TOOL:
+		{	
+			if(undolist->CountItems()==MAX_UNDO)
 			{
-				pix_per_line = (uint16) tmp->Bounds().Width();
-				pix_per_row =  (uint16) tmp->Bounds().Height();
-				
-				sprintf(full_path,nam_file);
-				BPath pth; pth.SetTo(nam_file);		
-				sprintf(name,pth.Leaf());  //just the name not the path
+				delete (UndoData *)undolist->ItemAt(0);
 			}
-									
-		}
-		else				
-  		{ 
-  			sprintf(str,Language.get("NOT_RECOGNIZED"));
-			strcat(str,nam_file);
-			alert = new BAlert("",str,"Doh!"); 
-    		alert->Go();
-			une_erreur=true;
-		}
+			newundo=new UndoData();
+			undolist->AddItem(newundo);
+			
+			saverect.right++;
+			if(!(p_active_layer->bitmap->Bounds().Contains(saverect)))
+			{	saverect.LeftTop().ConstrainTo(p_active_layer->bitmap->Bounds());
+				saverect.RightBottom().ConstrainTo(p_active_layer->bitmap->Bounds());
+			}
+			newundo->rect=saverect;
 
-	}
+			// When mask mode is implemented, will need to check
+			// for the mask flag here, in addition to the existing code
+			newundo->layerindex=active_layer;
+			saverect.OffsetTo(0,0);
 
-FinishLayer();
-if (une_erreur==true) return B_ERROR;
-else return B_OK;
-	
-}
+			newundo->bitmap=new BBitmap(saverect,B_RGBA32);
+			newundo->type=UNDO_TOOL;
 
-
-void BPMImage::FinishLayer()
-{
- 	active_layer = layer_amount;
- 	
- 	if (layer_amount==0)
-				{
-				pix_per_line = (uint16) the_layers[active_layer]->img->Bounds().Width();
-				pix_per_row =  (uint16) the_layers[active_layer]->img->Bounds().Height();
-				}
-}
-
-const char* BPMImage::ComputeLayerName(const char **nm, int32 type)
-{
-	
-	bool use_new_one = false;
-
-	char *layer_name = (char *)malloc(B_FILE_NAME_LENGTH);
-	
-	id_counter++; //only used for the names of the new layers
-
-	if (nm==NULL) use_new_one = true;
-	else
-	{
-     	if (*nm==NULL) use_new_one = true;
-	    else sprintf(layer_name,*nm);
-	}
-	
-
-	// generate a name
-	if (use_new_one == true)
-	{
-		char x[64];
-		switch(type)
+			CopyRect(newundo->rect,p_active_layer->bitmap,newundo->bitmap->Bounds(),newundo->bitmap,4);
+			break;
+		}	
+		case UNDO_BRUSH:	// brush changes
 		{	
-				
-			case LAYER_TYPE_BITMAP:	
-				sprintf(layer_name,Language.get("LAYER"));
-				break;
-			case LAYER_TYPE_TEXT: // beginning of the text
-				sprintf(layer_name,"text");
-				break;
-			case LAYER_TYPE_EFFECT:
-				sprintf(layer_name,"effect");
-				break;
-			case LAYER_TYPE_GUIDE:
-				sprintf(layer_name,Language.get("LAYER_GUIDE"));
-				break;	
-			default: 
-				beep(); beep(); 
-				printf("Wrong parameter type sent to ComputeLayerName"); break;				
-		}
-			
-		sprintf(x," %ld",id_counter);
-		strcat(layer_name,x);
-	}	
-	
-	return (layer_name);
-
-}
-
-
-status_t BPMImage::DeleteLayer(int32 which_one)
-{
-	
-if (which_one!=layer_amount)
-{
-	delete	the_layers[which_one];
-	
-	//do garbage collection, being deleted layer was not the last one
-	int32 t=which_one;
-	
-	while (t != layer_amount)
-	{
-		the_layers[t] = the_layers[t+1];
-		the_layers[t]->id = t;
-		
-		t++;
-	}
-	
-	the_layers[t+1]=NULL;
-	
- 	active_layer = which_one;
-}
-else
-{
- 		active_layer = which_one-1; //ok, being you can't delete the 1st layer
-	
- 		delete	the_layers[which_one];
-		the_layers[which_one]=NULL;
-}
-
-	layer_amount--;
- 	
-return B_OK;
-}
-
-status_t BPMImage::Revert()
-{
-LoadLayer(full_path);
-return B_OK;
-}	
-
-void BPMImage::PurgeUndo()  
-{
-
-	//Erase the undos of the previous image
-	if (undo_data->undo[undo_data->undo_amount]!=NULL && undo_data->undo_amount > 0)
-	{
-		while (undo_data->undo_amount!=0)
-		{
-			delete undo_data->undo[undo_data->undo_amount]; undo_data->undo[undo_data->undo_amount]=NULL;
-			undo_data->undo_amount--;
-		}
-	}
-	
-}	
-
-void BPMImage::FillMask()
-{
-	uint8 *xx_bits2 = (uint8*) mask_undo_bitmap->Bits();
-	uint32 length = mask_undo_bitmap->BitsLength();
-	memset(xx_bits2,0,length);
-  	MemorizeUndo (BRect(0,0,pix_per_line-1,pix_per_row-1),MASK_FORE_COLOR);  
-}
-
-
-void BPMImage::SetMaskFromColorZone(rgb_color col, uint8 tolerance, uint8 mode)
-{
-
-
-//Mr. Lema didn't know if 0 or 255 selected - needed to check and correct
-// mask 0 by default - any transparency
-
-uint8  *pic_bits  = (uint8*) display_bitmap->Bits();
-uint8  *mask_bits = (uint8*) mask_undo_bitmap->Bits();
-
-int16 tol_total;
-float temp;
-
-uint8 new_val;
-uint32 taillePic = mask_undo_bitmap->BitsLength();
-
-for (uint32 i = 0; i != taillePic; i++)
-{
-	tol_total=0;
-
-	// Tolerance is the average of the RGB values in the color
-
-	//Red
-    temp =  col.red -*pic_bits;
-    if (temp < 0) temp *= -1; //delta
-	tol_total += int16(temp);
-	pic_bits++;					
-
-	//Green
-    temp =  col.green-*pic_bits;
-    if (temp < 0) temp *= -1; //delta
-	tol_total +=int16(temp);
-	pic_bits++;		
-
-   	//Blue
-	temp =  col.blue -*pic_bits;
-	if (temp < 0) temp *= -1; //delta
-	tol_total += int16(temp);
-	pic_bits++;				
-
-	//skip alpha
-	pic_bits++; 
-
-	tol_total /= 3;
-
-
-	new_val = 0;
-	if (tol_total <tolerance) new_val = *mask_bits = 255-tol_total;
-		   
-   	switch(mode)
-	{
-		case MODE_REPLACE_SELECTION:   
-		*mask_bits = new_val;    
-		break;
-
-		case MODE_ADD_TO_SELECTION:   
- 		if (  new_val > *mask_bits) *mask_bits = new_val;
- 		break;
-
-		case MODE_SUBTRACT_FROM_SELECTION:   
-		if (  new_val < *mask_bits) *mask_bits = new_val;
-		break;
-
-	}
-	mask_bits++;
-}
-
-
-//copy in the undo mask
-//uint8 *xx_bits2 = (uint8*) mask_undo_bitmap->Bits();
-//memcpy(xx_bits2,mask_bits,mask_bitmap->BitsLength()); 
-MemorizeUndo (BRect(0,0,pix_per_line-1,pix_per_row-1),MASK_FORE_COLOR);  
-
-}
-
-void BPMImage::DeleteMask(uint8 mem_old_mask)  
-{
-
-	//mask 0 by default - any transparency
-	uint8 *xx_bits2 = (uint8*) mask_undo_bitmap->Bits();
-	uint32 length = mask_undo_bitmap->BitsLength();
-	memset(xx_bits2,255,length);
-
-    if (mem_old_mask==ON)
-    	MemorizeUndo (BRect(0,0,pix_per_line-1,pix_per_row-1),MASK_FORE_COLOR);  
-    else
-    {
-	    //also erase the original
-    	uint8 *xx_bits = (uint8*) mask_bitmap->Bits();
-		uint32 lg = mask_bitmap->BitsLength();
-		memset(xx_bits,255,lg);
-    }
-}
- 
-  
-void BPMImage::MemorizeUndo(BRect zone, uint8 mode)
-{
-if (zone.bottom > 0 && zone.right > 0)
-{
-	//See if size OK for mask and image
-	if (zone.top  < 0) zone.top=0; 
-	if (zone.left < 0) zone.left=0;
-	if (zone.bottom > pix_per_row-1)  zone.bottom = pix_per_row-1;
-	if (zone.right  > pix_per_line-1) zone.right  = pix_per_line-1;
-
-
-uint8 nb_of_bytes;
-uint8 *m_bits,*m_work_bits,*m_undo_bits;
-uint16 undo_x,undo_y;
-
-//THE PRINCIPLE: 
-//Initially, backup the modified zone (the original wasn't modified: the_bitmap)
-//in the Undo copy the undo_bitmap into the final bitmap (the_bitmap)
-
-	//CA MARCHE PAS DU TOUT ... a la fin de l'undo il recommence à zéro au lieu de décaler... à revoir.
-	if (undo_data->undo_amount <= ThePrefs.max_undo-1)
-		undo_data->undo_amount++;
-	else 
-	{ //if undo max is reached, shift to the very bottom
-		uint16 pos=0;
-		do
-		{	
-			  undo_data->undo[pos]		= undo_data->undo[pos+1];  		//undo bitmap
-			  undo_data->undo_type[pos] = undo_data->undo_type[pos+1];  //undo type
-			  undo_data->layer[pos] 	= undo_data->layer[pos+1];
-			  undo_data->width[pos] 	= undo_data->width[pos+1];
-			  undo_data->height[pos] 	= undo_data->height[pos+1];
-			
-			  pos++;
-
-		} while (pos != undo_data->undo_amount);
-
-	}
-
-
-	if (mode != MASK_FORE_COLOR)
-	{ 
-		undo_data->undo[undo_data->undo_amount] = new BBitmap(zone,B_RGB32); 	
-		undo_data->undo_type[undo_data->undo_amount] = mode;
-		undo_data->layer[undo_data->undo_amount] = active_layer;
-
-		//be able to restore in case of resize
-		undo_data->width[undo_data->undo_amount] = pix_per_line; 
-		undo_data->height[undo_data->undo_amount]  = pix_per_row;
-		nb_of_bytes = 4; 
-		m_bits        = (uint8*) the_layers[active_layer]->img->Bits();
-		m_work_bits   = (uint8*) undo_bitmap->Bits();
-	}
-	else
-	{ 	undo_data->undo[undo_data->undo_amount] = new BBitmap(zone,B_GRAY8); 
-        undo_data->undo_type[undo_data->undo_amount] = mode; 
-        // not the layer - the mask
-        undo_data->layer[undo_data->undo_amount] = -1;  
-        undo_data->width[undo_data->undo_amount] = pix_per_line;
-		undo_data->height[undo_data->undo_amount]  = pix_per_row;
-   		nb_of_bytes = 1; 
-		m_bits        =  (uint8*) mask_bitmap->Bits();
-		m_work_bits   =  (uint8*) mask_undo_bitmap->Bits();
-	}
-
-	// pointer to bitmap in bitmap table
-	m_undo_bits = (uint8*) undo_data->undo[undo_data->undo_amount]->Bits(); 
-
-	undo_x = uint16 (undo_data->undo[undo_data->undo_amount]->Bounds().Width()  +1);
-	undo_y = uint16 (undo_data->undo[undo_data->undo_amount]->Bounds().Height() +1);
-
-    uint32 pos_bits = uint32((zone.top *	pix_per_line)+zone.left) * nb_of_bytes; //pixel de départ
-
-	m_bits      += pos_bits;	//jump to point in question
-	m_work_bits += pos_bits;
-
-	uint16 line_length=(pix_per_line - undo_x)* nb_of_bytes;
-	uint16 undo_length= undo_x * nb_of_bytes; //ARGB
-
-	uint16 pos_x,pos_y;
-	pos_x = 0;
-	pos_y = 0;
-	
-	uint32 line_length_et_undo_length =line_length + undo_length;
-
-	
-		//progress_bar->SetBarColor(ThePrefs.color_memorize);
-		//progress_bar->Reset();  
-
-//	unsigned char show_progress;
-//	if (undo_length*undo_y >= SHOW_PROGRESS_LIMIT) show_progress=ON;		
-		
-	do
-	{  
-//		if (show_progress==ON) progress_bar->Update(percent_val);	
-			
-		memcpy(m_undo_bits,m_bits,undo_length); //save old zone
-		memcpy(m_bits,m_work_bits,undo_length); //save old zone
-	
-		pos_y++;      //following line
-    	m_bits	  += line_length_et_undo_length;
-		m_work_bits += line_length_et_undo_length;
-    	m_undo_bits += undo_length;
-    	
-	}	while (pos_y != undo_y); //line change
-		//progress_bar->Reset();  
-
-	undo_data->undo[undo_data->undo_amount+1]=NULL; //for REDO
-
-}
-
-}
-
-
-
-void BPMImage::Undo()
-{
-if (undo_data->undo_amount >= 1) //if more than 1 undo available
-{
-
-	uint8 nb_of_bytes;
-	uint8 *u_bits,*u_work_bits,*u_undo_bits;
-	BPoint le_point = undo_data->undo[undo_data->undo_amount]->Bounds().LeftTop();
-
-	uint16 undo_x = uint16 (undo_data->undo[undo_data->undo_amount]->Bounds().Width()  + 1);
-	uint16 undo_y = uint16 (undo_data->undo[undo_data->undo_amount]->Bounds().Height() + 1);
-
-	//If layer to be undone is not active, activate it
-	if (active_layer != undo_data->layer[undo_data->undo_amount]) 
-	{
-		active_layer = undo_data->layer[undo_data->undo_amount];
-		BMessage msg_x(ACTIVATE_LAYER);
-		msg_x.AddInt32("num",active_layer);
-		util.mainWin->PostMessage(&msg_x);
-	}	
-	
-	if (undo_data->undo_type[undo_data->undo_amount] != MASK_FORE_COLOR)	 
-	{  	nb_of_bytes = 4;
-		u_bits       = (uint8*) the_layers[undo_data->layer[undo_data->undo_amount]]->img->Bits();
-		u_work_bits  = (uint8*) undo_bitmap->Bits(); 
-	}
-	else 
-	{  	nb_of_bytes=1; 
-		u_bits       = (uint8*) mask_bitmap->Bits();
-		u_work_bits  = (uint8*) mask_undo_bitmap->Bits(); 
-	}
-	
-	//bitmap pointer in bitmap table    
-	u_undo_bits = (uint8*) undo_data->undo[undo_data->undo_amount]->Bits();
-
-
-    uint32 pos_bits = uint32 (((le_point.y *	pix_per_line)+le_point.x)*nb_of_bytes); //pixel de départ
-	u_bits           += pos_bits;	//go to point in question, RGB+A!!!
-	u_work_bits      += pos_bits;
-
-	uint16 line_length=(pix_per_line - undo_x)*nb_of_bytes;
-	uint16 undo_length= undo_x*nb_of_bytes; //ARGB
-
-	uint16 pos_x,pos_y;
-	pos_x = pos_y = 0;
-
-
-
-	//progress_bar->SetBarColor(ThePrefs.color_undo);
-	//progress_bar->Reset();  
-
-	
-	//unsigned char show_progress;
-	//if (undo_length*undo_y >= SHOW_PROGRESS_LIMIT) show_progress=ON;		
-
-	uint8 *temp = (unsigned char*) malloc(undo_length);
-	while (pos_y != undo_y) //changement de ligne
-	{  
-	//	if (show_progress==ON) progress_bar->Update(percent_val);
-
-		memcpy(temp,u_undo_bits,undo_length); 		//backup undo to temp
-		memcpy(u_undo_bits,u_work_bits,undo_length);	//copy work to undo
-		memcpy(u_work_bits,temp,undo_length);			//copy temp to work
-		memcpy(u_bits,u_work_bits,undo_length); 		//recopy screen work
-
-		u_undo_bits += undo_length; 
-   		u_bits      += line_length+undo_length; 
-	   	u_work_bits += line_length+undo_length; 
-   		
-    	pos_y++;      //following line
-   
-	}
-
-	//progress_bar->Reset();  
-
-
-	if (undo_data->undo_amount  >= 0  && is_redo == OFF) //undo minimum (start with step 0)
-	{
-		//delete undo[undo_amount]; //kill bmp
-		undo_data->undo_amount--;
-	}
-
-}
-
-
-if (ThePrefs.layer_selector_open==true)
-{		
-	BMessage msg(UPDATE_ACTIVE_LAYER);
-	msg.AddInt32("active",active_layer);
-	util.layerWin->PostMessage(&msg);		
-}	
-	
-	
-	
-} // end Undo function
-
-void BPMImage::Redo()
-{ 
-if (undo_data->undo[undo_data->undo_amount+1]!=NULL)
-{
-	undo_data->undo_amount++;
-	is_redo = ON;
-	Undo();
-	is_redo = OFF;
-}
-
-}
-
-
-void BPMImage::SetPixel(BPoint pix, rgb_color color)  
-{
-
-uint32 pos_bits;
-pos_bits= uint32 ((pix.x+(pix_per_line*pix.y))*4); //only counts there - it is similar on all lines
-uint8	*s_bits;
-s_bits  = (uint8*) undo_bitmap->Bits(); //access pixels directly
-s_bits += pos_bits; // jump to pixel in question
-
-*s_bits   = color.blue;  	s_bits++;
-*s_bits	  = color.green; 	s_bits++;
-*s_bits	  = color.red;  	s_bits++;
-*s_bits	  = color.alpha;  
-}
-
-void BPMImage::SetMaskPixel(BPoint pix, rgb_color color)  
-{
-
-uint32 pos_bits;
-pos_bits=uint32((pix.x+(pix_per_line*pix.y))*4); //similar for all lines
-uint8	*s_bits;
-s_bits = (uint8*) mask_undo_bitmap->Bits(); //durect pixel access
-s_bits+=pos_bits; //jump to pixel in question
-
-*s_bits     = (color.blue+color.red+color.green)/3;
-}
-
-void BPMImage::UpdateDisplayImg(BRect a_rect)
-{ 
-
-// for testing
-//a_rect.Set(0,0,pix_per_line,pix_per_row);
-  
-if (updating==false && ThePrefs.no_pictures_left ==OFF)
-{
-	updating=true;
-	
-	uint8 *bits_src,*bits_dest,*bits_msk;
-	int16 pos_x,pos_y,largeur,hauteur;   
-	uint8 tr;   
-
-	BRect rect = util.CheckRectangle(a_rect);
-
-
-	largeur =  (int32) (rect.right  - rect.left+1); //+1 for looping the loop
-	hauteur =  (int32) (rect.bottom - rect.top+1);	
-
-	if (largeur > pix_per_line) largeur = pix_per_line;
-	if (hauteur > pix_per_row)  hauteur = pix_per_row;
-
-	int16 line_size_8_bits = pix_per_line-largeur;
-	int16 line_size_32 	   = line_size_8_bits * 4;
-
-	uint8 tmp;
-
-
-	uint8 mask_blue  = ThePrefs.masking_color.blue;
-	uint8 mask_green = ThePrefs.masking_color.green;
-	uint8 mask_red   = ThePrefs.masking_color.red;
-
-
-	//go to spot in question in all images
-    uint32 pos_bits = uint32 (rect.left+(pix_per_line*rect.top)); //starting pixel (top left in rect)
-	uint32 pos_bits_32 = pos_bits*4; 
-
-	int32 quantity_drawn=1;
-
-	int32 i =0;
-	while(i!=layer_amount+1)
-	{
-		if (the_layers[i]->is_visible==true)
-		{
-			switch (the_layers[i]->layer_type)
+			if(undolist->CountItems()==MAX_UNDO)
 			{
-				case LAYER_TYPE_BITMAP:
-					quantity_drawn++;
-	
-					//pointers at beginning of images
-					bits_src   = (uint8*) the_layers[i]->img->Bits();
-					//zero out each time
-					bits_dest  = (uint8*) display_bitmap->Bits();
-
-					bits_src   += pos_bits_32; 
-					bits_dest  += pos_bits_32; //BGR+A = x4
-	
-					//esp. not to advance in bits_under, considering how it 
-					// is forseeably the same one as src or dest!
-					tr = uint8(the_layers[i]->opacity);
-	
-					pos_y=0;
-					while (pos_y <  hauteur) //change lines
-					{   
-  						pos_x=0;
-   						while (pos_x < largeur) //change of pixel in each line
-						{ 
-							switch(the_layers[i]->draw_mode)
-							{
-								case NORMAL:
-					    			*bits_dest  = TheTables.tab_normal[tr][*bits_dest]  + TheTables.tab_pourcent_x_val[tr][*bits_src];	bits_src++;  bits_dest++;
-					    			*bits_dest  = TheTables.tab_normal[tr][*bits_dest]  + TheTables.tab_pourcent_x_val[tr][*bits_src];	bits_src++;  bits_dest++;
-									*bits_dest  = TheTables.tab_normal[tr][*bits_dest]  + TheTables.tab_pourcent_x_val[tr][*bits_src];	bits_src+=2; bits_dest+=2;
-									break;
-
-								case MULTIPLY:
-									tmp = TheTables.tab_multiply[*bits_dest][*bits_src];
-									*bits_dest  =   TheTables.tab_normal[tr][*bits_dest]  +  TheTables.tab_pourcent_x_val[tr][tmp]; 
-					 				bits_src++;  bits_dest++; 
-
-									tmp = TheTables.tab_multiply[*bits_dest][*bits_src];
-									*bits_dest  =   TheTables.tab_normal[tr][*bits_dest]  +  TheTables.tab_pourcent_x_val[tr][tmp];
-	 								bits_src++;  bits_dest++; 
-
-									tmp = TheTables.tab_multiply[*bits_dest][*bits_src];
-									*bits_dest  =   TheTables.tab_normal[tr][*bits_dest]  +  TheTables.tab_pourcent_x_val[tr][tmp];
-									bits_src+=2; bits_dest+=2; 
-									break;
-					
-					
-								/*
-								case LIGHTEN:
-					
-									tmp = TheTables.tab_lighten[tr][*bits_under];
-									*bits_dest  =   TheTables.tab_normal[tr][*bits_under]  +  TheTables.tab_pourcent_x_val[tr][tmp]; 
-									bits_src++;  bits_dest++; bits_under++;
-
-									tmp = TheTables.tab_lighten[tr][*bits_under];
-									*bits_dest  =   TheTables.tab_normal[tr][*bits_under]  +  TheTables.tab_pourcent_x_val[tr][tmp]; 
-					 				bits_src++;  bits_dest++; bits_under++;
-
-									tmp = TheTables.tab_lighten[tr][*bits_under];
-									*bits_dest  =   TheTables.tab_normal[tr][*bits_under]  +  TheTables.tab_pourcent_x_val[tr][tmp]; 
-									bits_src+=2; bits_dest+=2; bits_under+=2;
-	 								break;
-	 			
-		 						case DARKEN:
-			 						*l_bits  =   TheTables.tab_darken[tr][*l_bits]  +  TheTables.tab_pourcent_x_val[tr][*l_bits]; l_bits++;
-									*l_bits  =   TheTables.tab_darken[tr][*l_bits]  +  TheTables.tab_pourcent_x_val[tr][*l_bits]; l_bits++;
-									*l_bits  =   TheTables.tab_darken[tr][*l_bits]  +  TheTables.tab_pourcent_x_val[tr][*l_bits];
-	 								break;
-								*/
-					
-								case COMBINE:
-		 							tmp = TheTables.tab_combine[*bits_dest][*bits_src];
-					 				*bits_dest  =   TheTables.tab_normal[tr][*bits_dest]  +  TheTables.tab_pourcent_x_val[tr][tmp];
-									bits_src++;  bits_dest++; 
-
-					 				tmp = TheTables.tab_combine[*bits_dest][*bits_src];
-					 				*bits_dest  =   TheTables.tab_normal[tr][*bits_dest]  +  TheTables.tab_pourcent_x_val[tr][tmp];
-									bits_src++;  bits_dest++; 
-
-					 				tmp = TheTables.tab_combine[*bits_dest][*bits_src];
-		 							*bits_dest  =   TheTables.tab_normal[tr][*bits_dest]  +  TheTables.tab_pourcent_x_val[tr][tmp];
-									bits_src+=2; bits_dest+=2; 
-	 								break;
-
-	 						
-								case DIFFERENCE:
-					
-									tmp = TheTables.tab_difference[*bits_dest][*bits_src];
-									*bits_dest  =   TheTables.tab_normal[tr][*bits_dest]  +  TheTables.tab_pourcent_x_val[tr][tmp];
-									bits_src++;  bits_dest++; 
-					
-									tmp = TheTables.tab_difference[*bits_dest][*bits_src];
-									*bits_dest  =   TheTables.tab_normal[tr][*bits_dest]  +  TheTables.tab_pourcent_x_val[tr][tmp];
-									bits_src++;  bits_dest++; 
-	
-									tmp = TheTables.tab_difference[*bits_dest][*bits_src];
-									*bits_dest  =   TheTables.tab_normal[tr][*bits_dest]  +  TheTables.tab_pourcent_x_val[tr][tmp];
-									bits_src+=2; bits_dest+=2; 
-									break;
-							}//end draw mode switch
-							pos_x++;
-						}//end while pos_x (horizontal line)
-						pos_y++;      //next line
-
-						bits_dest	+= line_size_32;
-						bits_src	+= line_size_32;
-		
-					}//end while pos_y (vertical line)
-	
-					i++; //next layer
-
-					break; //end bitmao type switch
-
-				case LAYER_TYPE_TEXT:
-					break;
-				case LAYER_TYPE_EFFECT:
-					break;
-				case LAYER_TYPE_GUIDE:
-					break;
-
-			}//end layer-type switch
-
-		} else i++; //end if layer is visible
-
-
-		//----------------- M A S K ----------------------------
-
-		if (ThePrefs.mask_mode==ON && quantity_drawn >= 0)
+				delete (UndoData *)undolist->ItemAt(0);
+			}
+			newundo=new UndoData();
+			undolist->AddItem(newundo);
+			if(userbrush==false)
+			{	newundo->brush_width=brush_width;
+				newundo->brush_height=brush_height;
+				newundo->brushtype=brushtype;
+				newundo->brush_softness=brush_softness;
+				newundo->userbrush=false;
+			}
+			else
+			{	newundo->brush_width=0;
+				newundo->brush_height=0;
+				newundo->brushtype=0;
+				newundo->brush_softness=0;
+				newundo->userbrush=true;
+			}
+			newundo->bitmap=new BBitmap(currentbrush);
+			newundo->type=UNDO_BRUSH;
+			break;
+		}	
+		case UNDO_LAYER:	// single-layer operations
 		{
-			// Tack on what we drew elsewhere
-			bits_dest =  (uint8*) display_bitmap->Bits(); 
-			bits_msk   = (uint8*) mask_bitmap->Bits();
-			bits_dest += pos_bits_32; 
-			bits_msk   += pos_bits;
-		
-			pos_y=0;
-			while (pos_y <  hauteur) // line change
-			{   
-  			 	pos_x=0;
-   				while (pos_x <  largeur) // change in pixel in each line
-            	{ 
+			if(undolist->CountItems()==MAX_UNDO)
+				delete (UndoData *)undolist->ItemAt(0);
+			newundo=new UndoData();
+			undolist->AddItem(newundo);
 
-					tr = TheTables.tab_char_to_shade[*bits_msk];
-		
-    		        *bits_dest = TheTables.tab_normal[tr][mask_blue]  + TheTables.tab_pourcent_x_val[tr][*bits_dest];
-					bits_dest++; 
+			// Layer save operations here
 
-					*bits_dest  = TheTables.tab_normal[tr][mask_green] + TheTables.tab_pourcent_x_val[tr][*bits_dest];
-					bits_dest++; 
+			newundo->type=UNDO_LAYER;
+			break;
+		}
+		case UNDO_TRANSFORM:	// image was resized, rotated,etc.
+			break;
+		default:
+			return BPM_BAD_PARAMETER;
+			break;
+	}
+	return BPM_OK;
+}
 
-					*bits_dest  = TheTables.tab_normal[tr][mask_red]   + TheTables.tab_pourcent_x_val[tr][*bits_dest];
-					bits_dest+=2;
-		
-					bits_msk++;
+bpm_status BPMImage::Undo(void)
+{
+	if(undolist->CountItems()==0)
+		return BPM_OK;
 
-					pos_x++;
-				}//end while horizontal line
-				pos_y++;      // next line
+	UndoData *cdata=(UndoData *)undolist->LastItem();
 
-				bits_dest	+= line_size_32;
-				bits_msk	+= line_size_8_bits;
-		
-			}//end while vertical line
-		}//end if in mask mode
+	switch(cdata->type & 254)
+	{
+		case UNDO_PAINTBRUSH:
+		case UNDO_TOOL:
+		{	// Need to add a check for the UNDO_MASK flag when mask mode implemented
 
-	} // end while not done updating all layers
+			if(cdata->bitmap==NULL)
+				return BPM_BAD_ALLOC;
+				
+			CopyRect(cdata->bitmap->Bounds(),cdata->bitmap,
+						cdata->rect,p_active_layer->bitmap,4);
+			UpdateDisplayImage(cdata->rect);
 
-	//printf("\nUpdated zone:");
-	//a_rect.PrintToStream();
+			// This will need to be changed when/if Redo() is implemented
+			delete cdata;
+			undolist->RemoveItem(undolist->LastItem());
+			break;
+		}
+		case UNDO_BRUSH:
+		{
+			delete currentbrush;
+			currentbrush=new BBitmap(cdata->bitmap);
+			if(cdata->userbrush==false)
+			{	BMessage *bmsg=new BMessage(SET_BRUSH_CONTROLS);
+				bmsg->AddInt8("shape",cdata->brushtype);
+				bmsg->AddInt16("width",cdata->brush_width);
+				bmsg->AddInt16("height",cdata->brush_height);
+				bmsg->AddInt8("softness",cdata->brush_softness);
 
-	//Screen refresh
-	BMessage *msg_a = new BMessage(DRAW_ME);
+				userbrush=false;
+				brushtype=cdata->brushtype;
+				brush_width=cdata->brush_width;
+				brush_height=cdata->brush_height;
+				brush_softness=cdata->brush_softness;
+				
+				bpmwindow->PostMessage(bmsg);
+			}
+			else
+			{	userbrush=true;
+				delete currentbrush;
+				currentbrush=new BBitmap(cdata->bitmap);
+			}
+			be_app->PostMessage(UPDATE_BRUSH);
+			delete cdata;
+			undolist->RemoveItem(undolist->LastItem());
+			break;
+		}
+		case UNDO_LAYER:
+		{
+			// Basically does nothing for the moment...
+			delete cdata;
+			undolist->RemoveItem(undolist->LastItem());
+			break;
+		}
+			
+		case UNDO_TRANSFORM:
+			// Do nothing for now...
+			break;
 
-	msg_a->AddRect("zone",a_rect);
-	util.mainWin->PostMessage(msg_a);
+		default:
+			return BPM_INTERNAL_ERROR;	// bad undodata type
+	}	
+	return BPM_OK;
+}
 
-	updating = false;
-}//end if not updating
+void BPMImage::ClearUndo(void)
+{
+	if(undolist->CountItems()!=0)
+	{	int32 i;
+		for(i=0;i<undolist->CountItems();i++)
+		{	delete (UndoData *)undolist->ItemAt(i);
+		}
+		undolist->MakeEmpty();
+	}
+}
 
-}// end UpdateDisplayImg function
+BRect BPMImage::GetBrushedRect(BPoint pt,bool zoom_comp=true)
+{	// Given a point, this will return the rectangle that would be painted by
+	// a Paintbrush call, optionally with zoom compensation
+	if(zoom_comp)
+	{	pt.x = floor(pt.x / zoom);
+		pt.y = floor(pt.y / zoom);
+	}
+	pt.ConstrainTo(display_bitmap->Bounds());
 
+	int32 	x=int32(pt.x),
+			y=int32(pt.y);
+
+	// data vars for brush and for bitmap
+	uint32 bitheight,bitwidth,lclip,rclip,tclip,bclip;
+	BRect brush_rect,brushbounds,bmpbounds,workbounds,undorect;
+
+	brushbounds=currentbrush->Bounds();
+	bmpbounds=display_bitmap->Bounds();
+	workbounds=work_bitmap->Bounds();
+	
+	// dimensions of bitmap for brush - NOT actual brush dimensions
+	bitwidth=currentbrush->Bounds().IntegerWidth();
+	bitheight=currentbrush->Bounds().IntegerHeight();
+
+	// jump by offset so that brush's center is where we clicked
+	x -=int32(bitwidth/2);
+	y -=int32(bitheight/2);
+	
+	// Get brush dimensions in image
+	brush_rect.left=x;
+	brush_rect.top=y;
+	brush_rect.right=x+bitwidth;
+	brush_rect.bottom=y+bitheight;
+	undorect=brush_rect;
+	
+	// Assign brush bitmap clipping rectangle proper values
+	tclip=lclip=0;
+	rclip=(int32)brushbounds.right;
+	bclip=(int32)brushbounds.bottom;
+
+	if(brush_rect.left < 0)
+	{	lclip=int32(brush_rect.left * -1);
+		undorect.left=0;
+	}
+	if(brush_rect.top < 0)
+	{	tclip=int32(brush_rect.top * -1);
+		undorect.top=0;
+	}
+	if(brush_rect.right > bmpbounds.right)
+	{	rclip -= int32(brush_rect.right-bmpbounds.right);
+		undorect.right=bmpbounds.right;
+	}
+	if(brush_rect.bottom > bmpbounds.bottom)
+	{	bclip -= int32(brush_rect.bottom-bmpbounds.bottom);
+		undorect.bottom=bmpbounds.bottom;
+	}
+	return undorect;
+}
+
+void BPMImage::SelectAll(void)
+{
+	BView dview(selection->Bounds(),"dview",B_FOLLOW_NONE,B_WILL_DRAW);
+	selection->Lock();
+	selection->AddChild(&dview);
+	dview.SetHighColor(128,128,128,0);
+	dview.FillRect(dview.Bounds());
+	dview.RemoveSelf();
+	selection->Unlock();
+}
+
+void BPMImage::SelectNone(void)
+{
+	BView dview(selection->Bounds(),"dview",B_FOLLOW_NONE,B_WILL_DRAW);
+	selection->Lock();
+	selection->AddChild(&dview);
+	dview.SetHighColor(128,128,128,255);
+	dview.FillRect(dview.Bounds());
+	dview.RemoveSelf();
+	selection->Unlock();
+}
+
+void BPMImage::PrintToStream(void)
+{
+	printf("---------------------------------------------\n");
+	printf("BPMImage %s (%ld x %ld)\n",name,width,height);
+	printf("Foreground: RBGA(%d %d %d %d)\n",forecolor.red,forecolor.green,forecolor.blue,forecolor.alpha);
+	printf("Background: RBGA(%d %d %d %d)\n",backcolor.red,backcolor.green,backcolor.blue,backcolor.alpha);
+	printf("Fill tolerance: %d\nActive layer: %d\n",tolerance,active_layer);
+	printf("Number of layers: %d\nZoom: %f\n",number_layers,zoom);
+	printf("Path: %s\nMIME string: %s",path.String(),MIME.String());
+	printf("Mask mode: %d\nErase mode: %d\n",maskmode,erasemode);
+	printf("---------------------------------------------\n");
+}

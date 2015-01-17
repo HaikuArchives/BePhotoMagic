@@ -1,121 +1,146 @@
-#ifndef NAT_IMAGE_H
-#define NAT_IMAGE_H
+#ifndef BPM_IMAGE_H
 
-#include "all_includes.h"
+#define BPM_IMAGE_H
 
-#define MAX_GUIDES 512
+#include <Application.h>
+#include <Window.h>
+#include <View.h>
+#include <Picture.h>
+#include <Bitmap.h>
+#include <String.h>
+#include <List.h>
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
 
-#define LAYER_TYPE_BITMAP  0
-#define LAYER_TYPE_TEXT    1
-#define LAYER_TYPE_EFFECT  2
-#define LAYER_TYPE_GUIDE   3
-#define LAYER_TYPE_SELECTION 4
+#include "Layer.h"
+#include "LayerWindowMsgs.h"
+#include "ErrorCodes.h"
+#include "SpLocaleApp.h"
+#include "TransModes.h"
+#include "PointStack.h"
+#include "Undo.h"
+#include "Utils.h"
 
-#define MODE_REPLACE_SELECTION  		0
-#define MODE_ADD_TO_SELECTION    		1
-#define MODE_SUBTRACT_FROM_SELECTION    2
+// "Borrowed" from BrushView.h
+#ifndef BRUSH_TYPE_ELLIPSE
+	#define BRUSH_TYPE_ELLIPSE	0
+	#define BRUSH_TYPE_RECT		1
+#endif
 
-
-struct UndoData{
-					BBitmap* undo[MAX_UNDO]; //bitmap table for undo
-					int16    undo_amount;
-					int32    width[MAX_UNDO]; //for restoration in case of resizing
-					int32    height[MAX_UNDO];
-					int8     undo_type[MAX_UNDO];
-					int16    layer[MAX_UNDO];
-					
-				 };	
-
-
-class Layer
-{
-   public:
-   
-	Layer(const char *nm, BBitmap *pic,int32 id, int32 the_type);
-	virtual	~Layer(); //defining destructor necessary because of bitmaps
-
-	char name[B_FILE_NAME_LENGTH];	
-    BBitmap *img;
-    int32 id;
-	int32 draw_mode;
-	bool is_visible;
-	bool alpha_activated;
-	
-	
-	float opacity;
-	bool active;
-
-	
-	//for special types
-	int32 layer_type;
-	char *text;
-	int16 x_guides[MAX_GUIDES];
-	int16 y_guides[MAX_GUIDES];
-	int16 x_guides_amount;
-	int16 y_guides_amount;
-	
-	rgb_color guides_color;
-	
-	void AddHoriGuide(int16 pos);
-	void AddVertiGuide(int16 pos);	
-	
-};	
+#ifndef UPDATE_BRUSH
+	#define UPDATE_BRUSH 'upbr'
+#endif
 
 
+#define MERGE_DOWN_AND 'mdan'
+#define MERGE_DOWN_OR 'mdor'
+#define MERGE_DOWN_NOT 'mdnt'
+#define MERGE_DOWN_XOR 'mdxr'
+
+#define SELECT_ALL 'slal'
+#define SELECT_NONE 'slnn'
+
+#ifndef UPDATE_COLORS
+	#define UPDATE_COLORS 'upcl'
+#endif
+
+#define MAX_LAYERS	255
+
+// Defined also in BrushView.h
+#ifndef SET_BRUSH_CONTROLS
+	#define SET_BRUSH_CONTROLS 'sbwc'
+#endif
 
 class BPMImage
 {
-   public:
-   
-	BPMImage(const char *nm, int16 width, int16 height);
-	virtual	~BPMImage(); //defining destructor necessary because of bitmaps
-	status_t CreateNewLayer(const char *nm);
-	status_t DeleteLayer(int32 which_one);
+public:
+	BPMImage(const char *namestr, int16 imgwidth, int16 imgheight);
+	BPMImage(void);
+//	BPMImage(const char *namestr, BBitmap *bmp);
+	virtual	~BPMImage(void);
 
-	status_t CreateNewGuideLayer(const char *nm);
+	// Data Members
+	char name[255];	
+	uint32 width,height;
+	Layer *layers[MAX_LAYERS];
 
-	status_t LoadNewLayer(const char* file_name);
-	status_t Revert();
-	status_t LoadLayer(const char *nm);
-	status_t NewLayerFromBmp(BBitmap *pic);
+	rgb_color forecolor;
+	rgb_color backcolor;
+
+	BBitmap *display_bitmap,	// Used in updating the display view
+			*currentbrush,
+			*work_bitmap,	// Used as an intermediary during paintbrush use
+			*selection;
+	BBitmap *bottomlayer,*currentlayer, *toplayer;	// for faster updates
+
+	uint16 brush_width,brush_height;
+	uint8 brushtype,brush_softness;
+	uint8 brushblend, brushalpha, lineblend, linealpha, linestep;
+	uint8 blendmode;	// image's "global" blendmode for functions
+	uint8 stampblend,stampalpha;
 	
-	bool updating;
-	char name[B_FILE_NAME_LENGTH];	
-	char full_path[NAME_SIZE];	
-
-    Layer *the_layers[MAX_LAYER];
-    
-	BBitmap *display_bitmap, *undo_bitmap, *mask_undo_bitmap, *mask_bitmap;
+	bool userbrush;
+	bool ispainting;
+	bool save_each_paint;	// tells Paintbrush to save where it painted
 	
-	int32 active_layer;
-	int32 layer_amount,id_counter;
+	void MakeBrush(int16 width, int16 height,int8 softness, int8 type);
+	void NotifyLayerWindow(void);
+	void UpdateDisplayImage(BRect update_rect);
+	void PrintToStream(void);
+
+	// Tool functions
+	void PaintBrush(BPoint pt, bool fore=true,bool zoom_comp=true);
+	void PaintLine(BPoint start,BPoint end,bool fore=true);
+	void PaintRect(BRect frame,bool fore=true);
+	void PaintFRect(BRect frame,bool fore=true);
+	void PaintEllipse(BRect frame,bool fore=true);
+	void PaintFEllipse(BRect frame,bool fore=true);
+	void Stamp(BPoint from,BPoint to);
+
+	void FloodFill(BPoint pt,rgb_color color);
+	void FillRow(BPoint pt);
+	void inline FillPixel(BPoint pt);
+	rgb_color GetPixel(BPoint pt);
+	void SetPixel(BPoint where, rgb_color color);
+	bool CheckPixel(BPoint pt);
+	rgb_color fillcolor,filledcolor;
+	PointStack pointstack;
+	uint8 tolerance;
+	bool upbound,downbound;
+
+	// Layer Functions
+	bpm_status CreateNewLayer(const char *namestr, int16 laywidth, int16 layheight);
+	bpm_status NewLayerFromBitmap(const char *namestr, BBitmap *bmp);
+	bool DeleteLayer(void);
+	void DuplicateLayer(void);
+	void SwapLayers(uint16 first, uint16 second);
+	void FlattenImage(void);
+	void MakeComposite(void);
+	void MergeDown(void);
+	void MergeAbove(BRect update_rect);
+	void MergeBelow(BRect update_rect);
+
+	// Undo-related
+	bpm_status SaveUndo(uint8 type,BRect saverect);
+	bpm_status Undo(void);
+	void ClearUndo(void);
+	BRect GetBrushedRect(BPoint pt,bool zoom_comp=true);
+
+	// Mask-related
+	void SelectAll(void);
+	void SelectNone(void);
 	
-	UndoData *undo_data;
-
-	float zoom_level; //1 =100%
-
-    void MemorizeUndo(BRect zone_to_keep, uint8 mode);   
-    void Undo(); void Redo();
-	void PurgeUndo();
-	uint8 is_redo;
-
-	void SetPixel(BPoint pix, rgb_color color); 
-	void SetMaskPixel(BPoint pix, rgb_color color);  
-	void DeleteMask(uint8 mem_old_mask);
-	void FillMask();
-	void UpdateDisplayImg(BRect a_rect);
-	const char* ComputeLayerName(const char**, int32 type);
-	void FinishLayer();
-	void SetMaskFromColorZone(rgb_color col, uint8 tolerance, uint8 mode);
-
-	void SetUnitsResType(int32 units, float res, int32 res_type);
-
-	int32 pix_per_line,pix_per_row;
-
- int32 units;
- float res_units;
- float resolution;
-   
+	uint16 active_layer;
+	Layer *p_active_layer;
+	uint16 number_layers;
+	float zoom;
+	uint8 untitled;
+	int32 typecode;
+	BString path;
+	BString MIME;	// MIME signature
+	BList *undolist;
+	bool maskmode,erasemode;
 };	
 
 #endif

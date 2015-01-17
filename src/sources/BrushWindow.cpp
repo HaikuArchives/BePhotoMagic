@@ -1,274 +1,264 @@
 #include "BrushWindow.h"
 
-AllBrushesView::AllBrushesView(BRect r, share *sh) : 
-	BView(r, "allbrushesview", B_FOLLOW_ALL, B_WILL_DRAW)
+BrushWindow::BrushWindow(BRect frame, char *title, int16 bwidth=16,int16 bheight=16, int8 blur=0, int8 btype=0)
+				: BWindow(frame, title, B_FLOATING_WINDOW,B_NOT_MINIMIZABLE | B_NOT_ZOOMABLE|
+//				B_NOT_H_RESIZABLE | B_WILL_ACCEPT_FIRST_CLICK | B_AVOID_FOCUS)
+				B_NOT_RESIZABLE | B_WILL_ACCEPT_FIRST_CLICK | B_AVOID_FOCUS)
 {
-shared = sh;
-SetViewColor(216,216,216);
-
-}
-
-
-OneBrushView::~OneBrushView()
-{
-	delete img;
-}
-
-OneBrushView::OneBrushView(const char *name, BRect r,  BBitmap *pic, share *sh, int32 le_id) : 
-	BView(r, name, B_FOLLOW_NONE, B_WILL_DRAW)
-{
-shared = sh;
-SetViewColor(216,216,216);
-
-//resize image to shared->perso_brush_size x shared->perso_brush_size!
-
-//img=pic;
-
-
-char str[200];
-img= new BBitmap(Bounds(),B_RGB32,true);
+	BMessage *tempmsg;
+	tempmsg=new BMessage(GET_APP_DIR);
+	tempmsg->AddInt8("sourcewin",1);
+	be_app->PostMessage(tempmsg);
 	
-if (pic!=NULL)
-	{	//center_if_smaller=true if picture is smaller than maximum
-		util.RescaleBitmap(pic,img,true);
-		sprintf(str,"%ld x %ld pixels", int32(pic->Bounds().Width()), int32 ( pic->Bounds().Height()));
-	}
-else { 
-		sprintf(str,"ERROR loading this brush");
-	 }
-	 
-	bb_help.SetHelp(this, str);
+	BRect rect  = Bounds();
+	rect.right -= B_V_SCROLL_BAR_WIDTH+3;
+	rect.bottom -= 23;
+
+	allbrushes = new AllBrushesView(rect);
+	scrollview = new BScrollView(SpTranslate("User Brushes"), allbrushes,B_FOLLOW_ALL, B_WILL_DRAW, false,true);
 	
-
-
-
-id = le_id;
-active=false;
-
+	dview = new BrushSelectorView(Bounds(),bwidth,bheight,blur,btype);
+	dview->SetViewColor(216,216,216);
+	
+	BTabView *tabs = new BTabView(Bounds(), "", B_WIDTH_AS_USUAL, B_FOLLOW_ALL, B_WILL_DRAW | B_NAVIGABLE_JUMP);
+	tabs->AddTab(dview, new BTab()); 
+	tabs->AddTab(scrollview, new BTab()); 
+	AddChild(tabs);
+	allbrushes->brushdir.SetTo("");
+	
+	FrameResized(Bounds().Width(),Bounds().Height());
 }
-
-
-void OneBrushView::Draw(BRect update_rect)
-{
-
-	DrawBitmap(img);
-
-	if (active==true)
-	{ 	
-		SetHighColor(0,0,200);
-		SetPenSize(1);
-		BRect rect = Bounds();
-		rect.InsetBy(1,1);
-		StrokeRect(rect, B_SOLID_HIGH);
-	}
-	
-	
-}		
-
-
-
-void OneBrushView::MouseDown(BPoint point)
-{
-	
-	active=true;
-	shared->current_perso_brush = id;
-
-	BMessage msg_x(ACTIVATE_PERSO_BRUSH);
-	msg_x.AddInt32("num",id);
-	util.mainWin->PostMessage(&msg_x);
-
-	BMessage msg(DRAW_PERSO_BRUSHES);
-	msg.AddInt32("active",id);
-	Window()->PostMessage(&msg);
-		
-}
-
-
-BrushWindow::BrushWindow(BRect frame, char *title, share *sh)
-				: BWindow(frame, title, B_FLOATING_WINDOW,B_NOT_MINIMIZABLE | B_NOT_ZOOMABLE| 
-				B_NOT_H_RESIZABLE | B_WILL_ACCEPT_FIRST_CLICK | B_AVOID_FOCUS)
-{
-shared=sh;
-
-shared->display_menu->ItemAt(0)->SetMarked(true);
-ThePrefs.brush_selector_open=true;
-util.brushWin = this;
- 					
-
-BRect rect  = Bounds();
-rect.right -= B_V_SCROLL_BAR_WIDTH;
-pr_br_view = new AllBrushesView(rect, shared);
-
-perso_scroll_view = new BScrollView(Language.get("PERSO_BRUSHES"), pr_br_view, 
-										    B_FOLLOW_ALL, B_WILL_DRAW, false,true);
-
-
-//BView *set_view = new BView(Bounds(),Language.get("BRUSHES"),B_FOLLOW_ALL, B_WILL_DRAW);
-BView *set_view = new BrushSelectorView(Bounds(), shared);
-set_view->SetViewColor(216,216,216);
-
-
-BTabView *tab_fond = new BTabView(Bounds(), "", B_WIDTH_AS_USUAL, B_FOLLOW_ALL, B_WILL_DRAW | B_NAVIGABLE); 	
-tab_fond->AddTab(set_view, new BTab()); 
-tab_fond->AddTab(perso_scroll_view, new BTab()); 
-
-
-AddChild(tab_fond);
-
-//AddChild(perso_scroll_view);
-
-SetSizeLimits(ThePrefs.brushes_frame.Width(),ThePrefs.brushes_frame.Width(), 
-			  ThePrefs.perso_brush_size+tab_fond->TabHeight(), 3000);	
-
-
-		pr_br_view->AddBrushes();
-		PostMessage(new BMessage(BRUSH_TITLE));
-
-FrameResized(Bounds().Width(),Bounds().Height()); //for scroll bar
-
-//PostMessage(INIT_PERSO);
-
-}
-
 
 BrushWindow::~BrushWindow()
 {
-	shared->display_menu->ItemAt(0)->SetMarked(false);
-	ThePrefs.brush_selector_open = false;
-	ThePrefs.brushes_frame = Frame(); //in order to use it again later
+	BMessage *msg=new BMessage(BRUSHWIN_CLOSED);
+	msg->AddRect("frame",Frame());
+	be_app->PostMessage(msg);
+//	bpmwindow->PostMessage(msg);
 }
-
-void AllBrushesView::AddBrushes()
-{
-
-// erase old brushes
-while (ChildAt(0) !=NULL) ChildAt(0)->RemoveSelf();
-
-	Window()->SetTitle(Language.get("LOADING_BRUSHES"));
-	char name[NAME_SIZE];
-	char tmp[255];
-	
-	sprintf(name,util.dossier_app);
-	strcat(name,"/brushes/");
-	
-	//find # of brushes in directory
-	BDirectory the_dir; 
-	the_dir.SetTo(name);	
-	last_brush = the_dir.CountEntries();
-//	printf("\nnb brushes: %d", last_brush);
-
-	BEntry the_entry;	
-	
-	BRect rect;
-	rect.Set(0,0,63,63);
-
-	int16 col=0;
-	char str[255];
-
-    int32 i = 0;
-	do
-	{	the_dir.GetNextEntry(&the_entry,false);
-		the_entry.GetName(tmp);
-	
-		sprintf(name,util.dossier_app);
-		strcat(name,"/brushes/");
-		strcat (name,tmp);
-
-		sprintf(str,"brview_%ld",i);
-
-		tab_brush_views[i]= new OneBrushView(str, rect, util.load_bmp(name), shared,i);
-	
-		sprintf(tab_brush_views[i]->name,tmp);
-	
-		col++; rect.OffsetBy(ThePrefs.perso_brush_size,0); //horizontale
-		if (col==3) 
-		{ 	col=0; 
-			rect.OffsetBy(-3*ThePrefs.perso_brush_size,ThePrefs.perso_brush_size);
-		}
-	
-		AddChild(tab_brush_views[i]);
-	
-	} while (i++!= last_brush-1);
-
-}
-
 
 void BrushWindow::FrameResized(float x, float y)
 {
+}
 
-	if (pr_br_view!=NULL)
-	{
-		int32 val =  (int32) ( (ceil(float(pr_br_view->last_brush)/3) *ThePrefs.perso_brush_size) -y); // div par 3 et arrondi vers le haut
-		if (val < 0) val=0;
-		perso_scroll_view->ScrollBar(B_VERTICAL)->SetRange(0,val);
-	}
-	
+void BrushWindow::FrameMoved(BPoint origin)
+{
+	BMessage *msg=new BMessage (CHILDWIN_MOVED);
+	msg->AddPoint("brushwin",origin);
+	be_app->PostMessage(msg);
 }
 
 void BrushWindow::MessageReceived(BMessage *msg)
 {
-int32 act;
-int32 i;
-char str[255];
 	switch (msg->what)
 	{
-	
-		case B_KEY_DOWN:
-			util.mainWin->PostMessage(msg);
-			break;
-		
-		case DRAW_PERSO_BRUSHES:
-			//clear old squares and draw the new one.
-			i=0;		
-			do 
-			{	pr_br_view->tab_brush_views[i]->active=false;
-				pr_br_view->tab_brush_views[i]->Invalidate();
-				pr_br_view->tab_brush_views[i]->Draw(pr_br_view->tab_brush_views[i]->Bounds());
-			
-			} while(i++ != pr_br_view->last_brush-1);
+		case BRUSHDIR_SET:
+			allbrushes->AddBrushes();
+			// Set scrollview range
+		break;
 
-			msg->FindInt32("active",&act);	
-		
-			if (act!=TEMP_BRUSH_VALUE)
-			{
-				pr_br_view->tab_brush_views[act]->active=true;
-				pr_br_view->tab_brush_views[act]->Invalidate();
-				pr_br_view->tab_brush_views[act]->Draw(pr_br_view->tab_brush_views[act]->Bounds());
-			}
-			pr_br_view->Draw(Bounds());
-		
-			PostMessage(new BMessage(BRUSH_TITLE));
-			break;
-		
-		case BRUSH_TITLE:
-			sprintf(str, Language.get("BRUSHES"));
-
-		
-			if (shared->brush_is_perso==true)
-			{
-				strcat(str," – ");
-				if (act!=TEMP_BRUSH_VALUE)
-					strcat(str,	pr_br_view->tab_brush_views[shared->current_perso_brush]->name);
-				else strcat(str,	Language.get("TEMP_BRUSH"));
-			}
-			
-			SetTitle(str);
-			break;
-		
-		case INIT_PERSO:
-			pr_br_view->AddBrushes();
-			PostMessage(new BMessage(BRUSH_TITLE));
-			break;
-		
-	default:
-		BWindow::MessageReceived( msg );
+		default:
+			BWindow::MessageReceived(msg);
 	 }
    	 	
 }
 
-
-
-void BrushWindow::FrameMoved(BPoint screenPoint)
+AllBrushesView::AllBrushesView(BRect r) : 
+	BView(r, "allbrushesview", B_FOLLOW_ALL, B_WILL_DRAW)
 {
-	 //bring pic back to front
+	SetViewColor(216,216,216);
 }
+
+AllBrushesView::~AllBrushesView(void)
+{
+}
+
+void AllBrushesView::AddBrushes()
+{	BBitmap *bmp;
+
+	// erase old brushes
+	while (ChildAt(0) !=NULL)
+		ChildAt(0)->RemoveSelf();
+
+	char name[255];
+	char tmp[255];
+	
+	sprintf(name,brushdir.Path());
+	strcat(name,"/brushes/");
+
+	//find # of brushes in directory
+	BDirectory the_dir; 
+	if(the_dir.SetTo(name) != B_OK)
+		return;
+
+	last_brush = the_dir.CountEntries();
+
+	// Minor limitation for now...
+	if(last_brush>255)
+		last_brush=255;
+
+	BEntry the_entry;
+	entry_ref e_ref;
+	
+	BRect rect;
+
+	int16 heightmax=32;
+	char str[255];
+
+	BRect trect(0,0,50,50);
+    int32 i = 0;
+    if(last_brush)
+	{	do
+		{	the_dir.GetNextEntry(&the_entry,false);
+			the_entry.GetName(tmp);
+		
+			sprintf(name,brushdir.Path());
+			strcat(name,"/brushes/");
+			strcat (name,tmp);
+			sprintf(str,"brushview%ld",i);
+			bmp=LoadBitmap(name);
+			if(bmp==NULL)
+				continue;
+
+			the_entry.GetRef(&e_ref);
+
+			userbrushes[i]=new ThumbButton(trect,name,SELECT_USER_BRUSH,
+					e_ref,bmp, B_FOLLOW_NONE, B_WILL_DRAW);
+			if(userbrushes[i] != NULL)
+			{	
+				
+				// Assuming that we got a valid file, move to the appropriate
+				// spot in the view
+				userbrushes[i]->MoveTo(rect.left,rect.top);
+
+				if(userbrushes[i]->Bounds().IntegerHeight()>heightmax)
+					heightmax=userbrushes[i]->Bounds().IntegerHeight();
+
+//				if(!(Parent()->Bounds().Contains(userbrushes[i]->Frame())) )
+				if(!(Bounds().Contains(userbrushes[i]->Frame())) )
+				{	
+					rect.OffsetBy(-rect.left,heightmax+10);
+					userbrushes[i]->MoveTo(rect.left,rect.top);
+					heightmax=userbrushes[i]->Bounds().IntegerHeight();
+				}
+				else
+					rect.OffsetBy(userbrushes[i]->Bounds().IntegerWidth()+10,0); //horizontal
+				rect.right=rect.left+userbrushes[i]->Bounds().IntegerWidth();
+				AddChild(userbrushes[i]);
+			}
+		} while (i++ != last_brush-1);
+	}
+}
+
+/*
+BBitmap * AllBrushesView::LoadBitmap(char *filename)
+{
+	BFile file;
+	
+	if (file.SetTo(filename, B_READ_ONLY) == B_OK)
+	{
+		BTranslatorRoster *roster = BTranslatorRoster::Default();
+		ProgressiveBitmapStream stream(NULL, NULL, false,false);
+		
+		roster->Translate(&file, 0, 0, &stream, B_TRANSLATOR_BITMAP);
+		
+		stream.SetDispose(false);
+		return stream.Bitmap();
+	}
+	else
+		return NULL;
+}
+*/
+ThumbButton::ThumbButton(BRect frame, const char *name, int32 msg, entry_ref entry,
+	BBitmap *bmp, int32 resize, int32 flags): BView(frame, name, resize, flags)
+{	
+	msgcmd=msg;
+	display=bmp;
+	ref=entry;
+
+	BMessage *tempmsg;
+	tempmsg=new BMessage(SELECT_USER_BRUSH);
+	tempmsg->AddRef("ref",&ref);
+	msgsender=new BInvoker(tempmsg,be_app);
+	
+//	if(Bounds().Contains(display->Bounds()))
+//		ResizeTo(display->Bounds().Width(),display->Bounds().Height());
+}
+
+ThumbButton::~ThumbButton(void)
+{	delete display;
+	
+	if(msgsender!=NULL)
+		delete msgsender;
+}
+
+void ThumbButton::AttachedToWindow(void)
+{
+}
+
+void ThumbButton::MouseUp(BPoint where)
+{	msgsender->Invoke();
+}
+
+void ThumbButton::Draw(BRect update)
+{
+	if(Bounds().Contains(display->Bounds()))
+	{	
+		if(Parent()!=NULL)
+		{	SetHighColor(Parent()->ViewColor());
+			FillRect(Bounds());
+		}
+		DrawBitmap(display,display->Bounds(),display->Bounds());
+	}
+	else
+		DrawBitmap(display,display->Bounds(),Bounds());
+}
+
+BBitmap *ThumbButton::RescaleBitmap(BBitmap *src, BRect outputsize, bool center_if_smaller)
+{
+// Rescales source bitmap to passed BRect size and returns a bitmap of the
+// same color space
+
+	BBitmap *dest;
+	dest= new BBitmap(outputsize,src->ColorSpace(),true);
+
+	if(dest==NULL)
+		return dest;
+	
+	BPicture *destpic;
+
+	dest->Lock();
+	BView *virtualView = new BView(outputsize, NULL, B_FOLLOW_NONE, 0 );
+	dest->AddChild( virtualView );
+
+	virtualView->BeginPicture(new BPicture); 
+   	
+   	BRect rect = outputsize;
+//	rect.InsetBy(1,1);
+	
+	
+	if (center_if_smaller==true) //center without rescaling
+	{
+		if ( dest->Bounds().Width() > src->Bounds().Width() )  
+		{ 
+			rect.right = src->Bounds().right;
+			rect.OffsetBy( (dest->Bounds().Width()-rect.right)/2,0);
+		}
+			
+		if ( dest->Bounds().Height() > src->Bounds().Height() ) 
+		{
+			rect.bottom = src->Bounds().bottom;
+			rect.OffsetBy( 0, (dest->Bounds().Height()-rect.bottom)/2);
+		}
+	}
+	
+	virtualView->DrawBitmap(src, src->Bounds(), rect);
+		 
+   	destpic = virtualView->EndPicture();
+   
+	virtualView->DrawPicture(destpic);
+  	dest->RemoveChild(virtualView );
+  	dest->Unlock();
+  	return dest;
+}
+

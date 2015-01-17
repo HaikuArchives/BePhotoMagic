@@ -238,7 +238,7 @@ ProgressiveBitmapStream::ReadAt(off_t pos, void *buffer, size_t size)
 		{
 			if (!fBarWin)
 			{
-				fBarWin = new BarWindow(util.find_win_pos(350,75, util.mainWin),
+				fBarWin = new BarWindow(BRect(200,200,400,400),
 					fBarTitle,
 					fDataSize);
 			}
@@ -412,7 +412,7 @@ ProgressiveBitmapStream::WriteAt(off_t pos, const void *buffer, size_t size)
 			if (!fBarWin)
 			{
 			
-			fBarWin = new BarWindow(util.find_win_pos(350,75, util.mainWin),
+			fBarWin = new BarWindow(BRect(200,200,400,400),
 					fBarTitle,
 					fHeader.dataSize);
 			}

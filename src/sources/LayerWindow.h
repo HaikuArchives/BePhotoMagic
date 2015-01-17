@@ -1,31 +1,39 @@
 #ifndef LAYER_WINDOW_H
 #define LAYER_WINDOW_H
 
-#include "share.h"
+#include <Application.h>
+#include <Window.h>
+#include <View.h>
+#include <Invoker.h>
+#include <Handler.h>
+#include <ScrollView.h>
+#include <MenuItem.h>
+#include <MenuField.h>
+#include <Slider.h>
+#include <Bitmap.h>
+#include <PictureButton.h>
+#include <PopUpMenu.h>
+#include <ListView.h>
+#include <ListItem.h>
+#include <TranslationUtils.h>
+#include <stdio.h>
+
+#include "ErrorCodes.h"
+#include "SpLocaleApp.h"
+#include "LayerWindowMsgs.h"
+#include "TSlider.h"
 
 #define LAYER_VIEW_HEIGHT 24
 #define LAYER_TOP_HEIGHT 48
-#define MAKE_VISIBLE 'mkvs'
 
-#define ADD_LAYER				'adly'
-#define ADD_GUIDE_LAYER			'adgl'
-#define DELETE_LAYER 			'dlly'
-#define DUPLICATE_LAYER			'duly'
-#define MERGE_LAYERS 			'mgly'
-#define MERGE_VISIBLE_LAYERS 	'mgvl'
-#define FLATTEN_IMAGE 			'flim'
-#define DISPLAY_OPTIONS			'dpop'
-
-#define ICON_EMPTY 0
-#define ICON_PAINT 1
-#define ICON_MASK  2
+extern BWindow *bpmwindow;
 
 class TriangleMenuView  : public BView 
 {
 public:
-	TriangleMenuView (BRect r, share *sh);
+	TriangleMenuView (BRect r);
 	virtual ~TriangleMenuView();
-	share *shared;
+
 	virtual void Draw(BRect);
 	virtual void MouseDown(BPoint point);
 
@@ -35,98 +43,75 @@ public:
 };
 
 
+class LayerList: public BListView
+{
+public:
+	LayerList(BRect frame,const char *name,int32 message,list_view_type type);
+	~LayerList(void);
+	void SelectionChanged(void);
+	void AttachedToWindow(void);
+	void PopulateList(int8 number_layers);
+	void EmptyList(void);
+	
+	int32 selectionmsg;
+	BInvoker *invoker;
+};
+
+class LayersView: public BView
+{
+public:
+	LayersView(BRect frame);
+	~LayersView(void);
+
+	void Draw(BRect update_rect);	
+
+	LayerList *visiblelist;
+	BScrollView *scrollvisible;
+	LayerList *activelist;
+	BScrollView *scrollactive;
+	
+	void UpdateLayerStack(bool imagesopen);
+
+	bool visible[255];
+	int8 active_layer;
+	int8 number_layers;
+};
+
 class LayerOptionsView  : public BView 
 {
 public:
-	LayerOptionsView (BRect r, share *sh);
-	share *shared;
-
-	BSlider *opacity;
+	LayerOptionsView (BRect r);
+	void AttachedToWindow(void);
+//	void MessageReceived(BMessage *msg);
+	void Draw(BRect r);
+	
+	TSlider *opacity;
 	BMenuField *draw_mode; 
-	TriangleMenuView *t_menu_view;
+	TriangleMenuView *tmenu;
+	BPictureButton *triangle_menu;
 };
-
-
-class PaintModeView  : public BView 
-{
-public:
-	PaintModeView (const char *name, BRect r, share *sh,BView* the_p);
-	virtual ~PaintModeView();
-
-	share *shared; 
-	
-	virtual void Draw(BRect);
-	virtual void MouseDown(BPoint point);
-	int32 active_pic;
-		
-	BBitmap *icon_paint,*icon_mask,*icon_empty;
-	BView *the_parent;
-};
-
-
-class LayerNameView : public BStringView
-{
-	public:
-	LayerNameView(const char *name,const char *layer_name, BRect r, BView* the_p);
-	virtual void MouseDown(BPoint point);
-	
-	BView *the_parent;
-};
-
-class OneLayerView : public BView 
-{
-public:
-	OneLayerView(const char *name, BRect r,Layer *ly, share *sh);
-	
-	share *shared;
-	virtual void Draw(BRect);
-	virtual void MouseDown(BPoint point);
-	
-	Layer *the_layer;
-	LayerNameView *the_nom;
-	BRect mini_view_rect, mini_alpha_rect;
-	
-	PaintModeView *p_mod;
- 	void CreateButton(char [255], char nm2[255]);
-	BPictureButton *visible_button;
-	BPicture *on,*off;
-
-};
-
-class AllLayersView : public BView 
-{
-
-public:
-AllLayersView(BRect r, share *sh);
-//virtual	~AllLayersView();
-
-share *shared;
-
-	void AddLayers();
-	bool ActivateLayer(int32 index=0);
-	OneLayerView *tab_layer_views[MAX_LAYER];
-
-};
-
 
 class LayerWindow : public BWindow 
 {
 public:
-
-	share *shared;
+	LayerWindow(BRect frame, char *title);
+	~LayerWindow();
 	
 	LayerOptionsView *options_view;
+	LayersView	*layersview;
 	
-	AllLayersView *pr_br_view;		
-	LayerWindow(BRect frame, char *title, share *sh); 
-	virtual ~LayerWindow();
-
-	BScrollView *perso_scroll_view;
-
-	virtual void FrameMoved(BPoint screenPoint);
-	virtual void FrameResized(float x, float y);
+	bpm_status SetLayers(uint8 number,bool update_stack=false);
+	bpm_status ShowLayer(uint8 index,bool update_stack=false);
+	bpm_status HideLayer(uint8 index,bool update_stack=false);
+	bpm_status SetActive(uint8 index,bool update_stack=false);
+	bpm_status SetBlendMode(uint8 mode);
+	bpm_status SetOpacity(uint8 value);
+	void SetControlNotification(bool enabled);
+	
+	virtual void FrameMoved(BPoint origin);
 	virtual void MessageReceived(BMessage *msg);
-    bool is_disabled;
+	BHandler *blackhole_handler;
+	bool notify;
 };
 
 #endif

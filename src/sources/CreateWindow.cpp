@@ -1,19 +1,13 @@
 #include "CreateWindow.h"
-#include <Button.h>
 
-#define COORD_CHANGED 'coch'
-
-CreateWindow::CreateWindow(BRect frame, share *sh)
-				: BWindow(frame, Language.get("CREATE_NEW"), B_FLOATING_WINDOW, B_NOT_MINIMIZABLE | B_NOT_RESIZABLE | B_NOT_ZOOMABLE | B_WILL_ACCEPT_FIRST_CLICK)
+CreateWindow::CreateWindow(BRect r)
+				: BWindow(r, SpTranslate("Create New Document"), B_FLOATING_WINDOW, B_NOT_MINIMIZABLE | B_NOT_RESIZABLE | B_NOT_ZOOMABLE | B_WILL_ACCEPT_FIRST_CLICK)
 {
-shared=sh;
-ThePrefs.create_win_open = true;
-
-crt_view = new CreateView(Bounds(),shared);
-AddChild(crt_view);
+createview = new CreateView(Bounds());
+AddChild(createview);
 
 old_unit=0;
-old_res_type=0;
+old_unittype=0;
 
 PostMessage(new BMessage(COORD_CHANGED)); 
 
@@ -21,13 +15,13 @@ PostMessage(new BMessage(COORD_CHANGED));
 //activate the first paper format
 BMessage *x = new BMessage(ACTIVATE_FORMAT);
 x->AddInt32("number",0);
-PostMessage(x);		
+PostMessage(x);
+Show();
 }
 
 
 CreateWindow::~CreateWindow()
 {
-	ThePrefs.create_win_open = false;
 }
 
 
@@ -36,70 +30,72 @@ void CreateWindow::MessageReceived(BMessage *msg)
 
 char str[255];
 float val,valb;
-int32 number,new_unit,res_type;
+int32 number,new_unit,unittype;
 
 	switch (msg->what)
 	{
 		case DO_IT:
-			shared->CreateNewImage(crt_view->name_field->Text(),crt_view->pix_x-1,crt_view->pix_y-1);
-			shared->act_img->SetUnitsResType(crt_view->units->Menu()->IndexOf(crt_view->units->Menu()->FindMarked()),
-										 atof(crt_view->res->Text()), 
-										 crt_view->res_type->Menu()->IndexOf(crt_view->res_type->Menu()->FindMarked())
-										 );
+			// Force an update in case we hit OK without tabbing out of a
+			// image size box
+			UpdatePicSize();
+			BMessage *cmsg;
+			cmsg=new BMessage(CREATE_IMAGE);
+			cmsg->AddInt16("width",createview->pix_x);
+			cmsg->AddInt16("height",createview->pix_y);
+			be_app->PostMessage(cmsg);
 			Lock();
 			Close();
 			break;
 		
 		case CANCEL:
-			Lock();
-			Close();
+			Quit();
 			break;
 
 		case COORD_CHANGED:
-			UpdatePixSize();
+			UpdatePicSize();
 			break;
 
 		case UNITS_CHANGED:
-			val  = atof(crt_view->x->Text());
-			valb = atof(crt_view->y->Text());
+			val  = atof(createview->x->Text());
+			valb = atof(createview->y->Text());
 		
-			new_unit  = crt_view->units->Menu()->IndexOf(crt_view->units->Menu()->FindMarked());
-			res_type  = crt_view->res_type->Menu()->IndexOf(crt_view->res_type->Menu()->FindMarked());
+			new_unit  = createview->units->Menu()->IndexOf(createview->units->Menu()->FindMarked());
+			unittype  = createview->unittype->Menu()->IndexOf(createview->unittype->Menu()->FindMarked());
 		
 			//unit,int32 dest_unit, float resolution, float res_units)
-			val = util.ConvertUnits(val, old_unit, new_unit,atof(crt_view->res->Text()),res_type);
-			valb = util.ConvertUnits(valb, old_unit, new_unit,atof(crt_view->res->Text()),res_type);
+			val = ConvertUnits(val, old_unit, new_unit,atof(createview->res->Text()),unittype);
+			valb = ConvertUnits(valb, old_unit, new_unit,atof(createview->res->Text()),unittype);
 		
 			if (new_unit==UNIT_PIXELS)
 			{
 				sprintf(str,"%ld",int32(val));
-				crt_view->x->SetText(str);
+				createview->x->SetText(str);
 				sprintf(str,"%ld",int32(valb));
-				crt_view->y->SetText(str);
+				createview->y->SetText(str);
 			}
 			else
 			{
-				sprintf(str,"%.2f",val);   crt_view->x->SetText(str);
-				sprintf(str,"%.2f",valb);  crt_view->y->SetText(str);
+				sprintf(str,"%.2f",val);   createview->x->SetText(str);
+				sprintf(str,"%.2f",valb);  createview->y->SetText(str);
 			}
 		
 		
-			UpdatePixSize();
-			old_unit=crt_view->units->Menu()->IndexOf(crt_view->units->Menu()->FindMarked());
+			UpdatePicSize();
+			old_unit=createview->units->Menu()->IndexOf(createview->units->Menu()->FindMarked());
 			break;
 
 		case RES_CHANGED:
-			UpdatePixSize();
+			UpdatePicSize();
 			break;
 		
-		case RES_TYPE_CHANGED:
+		case UNIT_TYPE_CHANGED:
 		
-			val = atof(crt_view->res->Text());
+			val = atof(createview->res->Text());
 		
 			//only if it has really changed
-			if (old_res_type!=crt_view->res_type->Menu()->IndexOf(crt_view->res_type->Menu()->FindMarked()))
+			if (old_unittype!=createview->unittype->Menu()->IndexOf(createview->unittype->Menu()->FindMarked()))
 			{
-				if (crt_view->res_type->Menu()->IndexOf(crt_view->res_type->Menu()->FindMarked())==DPI) 
+				if (createview->unittype->Menu()->IndexOf(createview->unittype->Menu()->FindMarked())==DPI) 
 				{ 	val *= 2.54;
 				}
 				else 
@@ -109,46 +105,46 @@ int32 number,new_unit,res_type;
 			}
 			
 			sprintf(str,"%.2f",val);
-			crt_view->res->SetText(str);
+			createview->res->SetText(str);
 		
-			old_res_type=crt_view->res_type->Menu()->IndexOf(crt_view->res_type->Menu()->FindMarked());
+			old_unittype=createview->unittype->Menu()->IndexOf(createview->unittype->Menu()->FindMarked());
 		
-			UpdatePixSize();
+			UpdatePicSize();
 			break;
 
 		case ACTIVATE_FORMAT:
 			msg->FindInt32("number",&number);
 
-			crt_view->res_type->Menu()->ItemAt(crt_view->the_formats[number]->what_res_type)->SetMarked(true);
-			crt_view->res_type->Menu()->SetLabelFromMarked(true); //pour mettre nom actif en titre
+			createview->unittype->Menu()->ItemAt(createview->the_formats[number]->unit_type)->SetMarked(true);
+			createview->unittype->Menu()->SetLabelFromMarked(true); //pour mettre nom actif en titre
 
-			crt_view->units->Menu()->ItemAt(crt_view->the_formats[number]->units)->SetMarked(true);
-			crt_view->units->Menu()->SetLabelFromMarked(true); //pour mettre nom actif en titre
+			createview->units->Menu()->ItemAt(createview->the_formats[number]->units)->SetMarked(true);
+			createview->units->Menu()->SetLabelFromMarked(true); //pour mettre nom actif en titre
 		
-			sprintf(str,"%.2f",crt_view->the_formats[number]->res);	crt_view->res->SetText(str);
+			sprintf(str,"%.2f",createview->the_formats[number]->res);	createview->res->SetText(str);
 
-			if (crt_view->the_formats[number]->units==UNIT_PIXELS)
+			if (createview->the_formats[number]->units==UNIT_PIXELS)
 			{
 				//Les pixels peuvent pas avoir de virgule!
-				sprintf(str,"%ld",int32(crt_view->the_formats[number]->x));
-				crt_view->x->SetText(str);
-				sprintf(str,"%ld",int32(crt_view->the_formats[number]->y));
-				crt_view->y->SetText(str);
+				sprintf(str,"%ld",int32(createview->the_formats[number]->x));
+				createview->x->SetText(str);
+				sprintf(str,"%ld",int32(createview->the_formats[number]->y));
+				createview->y->SetText(str);
 			}
 			else
 			{
-				sprintf(str,"%.2f",crt_view->the_formats[number]->x);
-				crt_view->x->SetText(str);
-				sprintf(str,"%.2f",crt_view->the_formats[number]->y);
-				crt_view->y->SetText(str);
+				sprintf(str,"%.2f",createview->the_formats[number]->x);
+				createview->x->SetText(str);
+				sprintf(str,"%.2f",createview->the_formats[number]->y);
+				createview->y->SetText(str);
 			}
 		
 			// very important to convert units
-			old_unit = crt_view->the_formats[number]->units;
-			old_res_type = crt_view->the_formats[number]->what_res_type;
+			old_unit = createview->the_formats[number]->units;
+			old_unittype = createview->the_formats[number]->unit_type;
 	
 		
-			UpdatePixSize();
+			UpdatePicSize();
 			break;
   	 }
 
@@ -158,16 +154,16 @@ int32 number,new_unit,res_type;
 }//end MessageReceived
 
 
-void CreateWindow::UpdatePixSize()
+void CreateWindow::UpdatePicSize()
 {
 
 //on doit obtenir des pixels à partir de xx,yy;
-float xx = atof(crt_view->x->Text());
-float yy = atof(crt_view->y->Text());
+float xx = atof(createview->x->Text());
+float yy = atof(createview->y->Text());
 		
 
 float divider =0;
-if (crt_view->res_type->Menu()->IndexOf(crt_view->res_type->Menu()->FindMarked())==DPI)
+if (createview->unittype->Menu()->IndexOf(createview->unittype->Menu()->FindMarked())==DPI)
 	//dots per inch (dpi)
 	divider=2.54;
 else
@@ -180,9 +176,9 @@ if (divider ==1)
 else 
 	inch_divider=1;
 		
-float res = atof(crt_view->res->Text());
+float res = atof(createview->res->Text());
 		
-switch(crt_view->units->Menu()->IndexOf(crt_view->units->Menu()->FindMarked()))
+switch(createview->units->Menu()->IndexOf(createview->units->Menu()->FindMarked()))
 {	
 	case UNIT_CM:
 		xx *= (res/divider);
@@ -208,19 +204,19 @@ switch(crt_view->units->Menu()->IndexOf(crt_view->units->Menu()->FindMarked()))
 char s[255];	
 
 sprintf(s,"(%ld pixels)",int32(xx));
-crt_view->pixel_x->SetText(s);
+createview->pixel_x->SetText(s);
 sprintf(s,"(%ld pixels)",int32(yy));
-crt_view->pixel_y->SetText(s);
+createview->pixel_y->SetText(s);
 
 //values used during creation
-crt_view->pix_x = int32(xx);
-crt_view->pix_y = int32(yy);
+createview->pix_x = int32(xx);
+createview->pix_y = int32(yy);
 
 float sz= (xx *yy *4) ;
 char str[255];
 char st_base[255];
 
-sprintf(st_base, Language.get("WEIGHT"));
+sprintf(st_base, SpTranslate("Size"));
 strcat(st_base,": ");
 if (sz > 32768)
 {	sz /= 1024;
@@ -231,25 +227,91 @@ else
 { 	sprintf(str,"(%G bytes)",sz);
 	strcat(st_base,str);
 }
-crt_view->taille->SetText(st_base);
+createview->taille->SetText(st_base);
 
 }
 
-PaperFormat::PaperFormat(char the_name[64], int32 the_res_type, float the_res, int32 the_units, float the_x,float the_y)
+float CreateWindow::ConvertUnits(float val, int32 src_unit,int32 dest_unit, float resolution, float res_units)
+{
+	float divider =0;
+	if (res_units==DPI)
+		divider=2.54; 		//dots per inch (dpi)
+	else
+		divider = 1;		//dots per centimeterd
+	
+	float inch_divider;
+	if (divider ==1)
+		inch_divider=2.54;
+	else
+		inch_divider=1;
+	
+	switch(src_unit)
+	{
+		case UNIT_CM:
+			switch(dest_unit)
+			{
+				case UNIT_CM:			 				break;
+				case UNIT_MM:   	val *= 10;	 		break;
+				case UNIT_INCH: 	val /= 2.54;		break;
+				case UNIT_PIXELS: 	val  *= (resolution/divider); break;
+			}
+			break;
+					
+		case UNIT_MM:
+			switch(dest_unit)
+			{
+				case UNIT_CM:		val /= 10;			break;
+				case UNIT_MM:   						break;
+				case UNIT_INCH: 	val /= (2.54*10);	break;
+				case UNIT_PIXELS: 	val  *= (resolution/divider)/10;	break;
+			}
+			break;
+					
+		case UNIT_INCH:
+			switch(dest_unit)
+			{
+				case UNIT_CM:		val *= 2.54;			break; 
+				case UNIT_MM:   	val *= (2.54*10);		break;
+				case UNIT_INCH: 	break;
+				case UNIT_PIXELS: 	val  *= (resolution*inch_divider);	break;
+			}
+			break;
+					
+		case UNIT_PIXELS:
+			switch(dest_unit)
+			{
+				case UNIT_CM: 		val  /= (resolution/divider);		break;
+										
+				case UNIT_MM:   	val  /= (resolution/divider)/10;	break; 
+									
+				case UNIT_INCH: 	val  /= (resolution*inch_divider);	break; 
+								
+				case UNIT_PIXELS: 	break;
+			}
+			break;
+	}
+	return val;
+}	
+
+PaperFormat::PaperFormat(char the_name[64], int32 the_unittype, float the_res, int32 the_units, float the_x,float the_y)
 {
 sprintf(name,the_name);
-what_res_type = the_res_type;
+unit_type = the_unittype;
 res = the_res;
 units = the_units;
 x = the_x;
 y = the_y;
 }
 
+bool CreateWindow::QuitRequested()
+{
+	be_app->PostMessage(CANCEL_CREATE_IMAGE);
+	return(true);
+}
 
-CreateView::CreateView(BRect rec, share *sh):
+CreateView::CreateView(BRect rec):
 	BView(rec, "create view", B_FOLLOW_ALL, B_WILL_DRAW)
 {
-shared=sh;
 SetViewColor(216,216,216);
 
 BRect rect;
@@ -260,11 +322,11 @@ taille->SetAlignment(B_ALIGN_CENTER);
 AddChild(taille);
 
 char str[255]; 
-char str2[255];
-sprintf(str,Language.get("UNTITLED"));
+//char str2[255];
+sprintf(str,"Untitled");
 //sprintf(str2," %d",shared->image_amount+1); 
-sprintf(str2," %d",shared->image_amount); 
-strcat(str,str2);
+//sprintf(str2," %d",shared->image_amount); 
+//strcat(str,str2);
 
 rect.OffsetBy(0,24);
 name_field = new BTextControl(rect,NULL,NULL,str,new BMessage(COORD_CHANGED), B_FOLLOW_ALL | B_NAVIGABLE, B_WILL_DRAW);
@@ -305,7 +367,7 @@ while (g != format_amount+1)
 ait->SetMarked(true);
 
 format_menu->SetLabelFromMarked(true);
-format_field = new BMenuField(rect,"",Language.get("FORMATS"),format_menu, B_FOLLOW_LEFT | B_FOLLOW_TOP,B_WILL_DRAW);
+format_field = new BMenuField(rect,"",SpTranslate("Formats"),format_menu, B_FOLLOW_LEFT | B_FOLLOW_TOP,B_WILL_DRAW);
 format_field->SetDivider(80);
 format_menu->SetLabelFromMarked(true);
 AddChild(format_field);
@@ -332,10 +394,10 @@ BMenuItem *it;
 rect.OffsetBy(4+80+16-1,-24*2);
 rect.right+=60;
 BMenu *unit_menu = new BMenu("");
-unit_menu->AddItem(it = new BMenuItem(Language.get("CENTIMETERS"),   new BMessage(UNITS_CHANGED)));
-unit_menu->AddItem(new BMenuItem(Language.get("MILLIMETERS"),    new BMessage(UNITS_CHANGED)));
-unit_menu->AddItem(new BMenuItem(Language.get("INCHES"), new BMessage(UNITS_CHANGED)));
-unit_menu->AddItem(new BMenuItem("pixels", new BMessage(UNITS_CHANGED))); //pixels cannot be translated in any language...
+unit_menu->AddItem(it = new BMenuItem(SpTranslate("Centimeters"),   new BMessage(UNITS_CHANGED)));
+unit_menu->AddItem(new BMenuItem(SpTranslate("Millimeters"),    new BMessage(UNITS_CHANGED)));
+unit_menu->AddItem(new BMenuItem(SpTranslate("Inches"), new BMessage(UNITS_CHANGED)));
+unit_menu->AddItem(new BMenuItem(SpTranslate("Pixels"), new BMessage(UNITS_CHANGED))); //pixels cannot be translated in any language...
 
 it->SetMarked(true);
 
@@ -353,18 +415,23 @@ BMenu *res_menu = new BMenu("");
 
 char str_a[256];
 char str_b[256];
-sprintf(str_a, "pixels/"); strcat(str_a,Language.get("INCH")); 		 strcat(str_a," (dpi)"); 
-sprintf(str_b, "pixels/"); strcat(str_b,Language.get("CENTIMETER")); strcat(str_b," (dpcm)");
+sprintf(str_a, "pixels/"); 
+strcat(str_a,SpTranslate("Inch"));
+strcat(str_a," (dpi)"); 
 
-res_menu->AddItem(xit = new BMenuItem(str_a, new BMessage(RES_TYPE_CHANGED)));
-res_menu->AddItem(new BMenuItem(str_b, new BMessage(RES_TYPE_CHANGED)));
+sprintf(str_b, "pixels/");
+strcat(str_b,SpTranslate("Centimeter"));
+strcat(str_b," (dpcm)");
+
+res_menu->AddItem(xit = new BMenuItem(str_a, new BMessage(UNIT_TYPE_CHANGED)));
+res_menu->AddItem(new BMenuItem(str_b, new BMessage(UNIT_TYPE_CHANGED)));
 
 xit->SetMarked(true);
 
 res_menu->SetLabelFromMarked(true);
-res_type = new BMenuField(rect,"",NULL,res_menu, B_FOLLOW_LEFT | B_FOLLOW_TOP,B_WILL_DRAW);
+unittype = new BMenuField(rect,"",NULL,res_menu, B_FOLLOW_LEFT | B_FOLLOW_TOP,B_WILL_DRAW);
 res_menu->SetLabelFromMarked(true);
-AddChild(res_type);
+AddChild(unittype);
 
 
 rect.OffsetBy(140,-24-24);
@@ -381,26 +448,13 @@ rect.bottom= Bounds().bottom-24;
 rect.top = Bounds().bottom-32;
 rect.left =8;
 rect.right =8+80;
-BButton *cancel = new BButton(rect,"",Language.get("CANCEL"),new BMessage(CANCEL),B_FOLLOW_ALL,B_WILL_DRAW | B_NAVIGABLE);
+BButton *cancel = new BButton(rect,"",SpTranslate("Cancel"),new BMessage(CANCEL),B_FOLLOW_ALL,B_WILL_DRAW | B_NAVIGABLE);
 AddChild(cancel);
 
 rect.right = Bounds().Width()-8;
 rect.left = Bounds().Width()-8-80;
-BButton *do_it = new BButton(rect,"",Language.get("YES"),new BMessage(DO_IT),B_FOLLOW_ALL,B_WILL_DRAW | B_NAVIGABLE);
+BButton *do_it = new BButton(rect,"",SpTranslate("OK"),new BMessage(DO_IT),B_FOLLOW_ALL,B_WILL_DRAW | B_NAVIGABLE);
 AddChild(do_it);
 do_it->MakeDefault(true);
 }
 
-
-
-void CreateView::MouseMoved(BPoint point, uint32 transit, const BMessage *le_message)
-{
-	if (transit==B_ENTERED_VIEW || transit== B_INSIDE_VIEW) 
-	{
-		BMessage *mx = new BMessage(SET_CURSOR);
-		mx->AddInt32("id",7); //7 = B_HAND_CURSOR
-		util.mainWin->PostMessage(mx);
-	}
-	
-
-}

@@ -1,107 +1,82 @@
-#ifndef UTILS_H
-#define UTILS_H
-
-
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
 #include <Application.h>
-#include <Window.h>
+#include <Screen.h>
+#include <Bitmap.h>
+#include <Rect.h>
+#include <Path.h>
+#include <Entry.h>
+#include <File.h>
+#include <AppFileInfo.h>
+#include <Roster.h>
+#include <TranslatorRoster.h>
+#include <TextControl.h>
+#include <BitmapStream.h>
+#include <NodeInfo.h>
 #include <View.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include <Alert.h>
-#include <Path.h>
-#include <Bitmap.h>
-#include <StringView.h>
-#include <ScrollView.h>
-#include <ScrollBar.h>
-#include <BitmapStream.h>
-#include <StorageKit.h>
-#include <TranslatorRoster.h>
-#include <List.h>
-#include <ListView.h>
-#include <TextView.h>
-#include <TextControl.h>
-#include <ColorControl.h>
-#include <CheckBox.h>
-#include <Beep.h> 
-#include <File.h>
-#include <FilePanel.h>
-#include <Slider.h>
-#include <MenuBar.h>
-#include <MenuItem.h>
-#include <MenuField.h>
-#include <Screen.h>
-#include <Roster.h>
-#include <TranslationUtils.h>
-#include <PictureButton.h>
-#include <Control.h>
-#include <StatusBar.h>
-#include <NodeInfo.h>
-#include <AppFileInfo.h>
+//#include "PBitmapModif.h"
+//#include "BBitmapAccessor.h"
 
-//-----------------
+#ifndef MIN
+	#define MIN(a,b) ( (a<b)?a:b )
+#endif
 
-#include "defs.h"
+#ifndef MAX
+	#define MAX(a,b) ( (a>b)?a:b )
+#endif
 
-#include "LanguageClass.h" //By D. Olbertz
-#include "PBitmapModif.h"
-#include "ProgressWin.h"
+#ifndef ROUND
+	#define ROUND(a)	( (a-long(a))>=.5)?(long(a)+1):(long(a))
+#endif
 
+#ifndef PI
+	#define PI 3.14159265358979323846
+#endif
 
-class Utils
+#ifndef POST_BITMAP
+	#define POST_BITMAP 'pbmp'
+#endif
+
+#ifndef HSV_COLOR_DEF
+
+#define HSV_COLOR_DEF
+typedef struct hsv_color
 {
-   public:
-   
-   Utils();    //constructeur
+	uint16 hue;
+	uint8 saturation;
+	uint8 value;
+	uint8 alpha;
+};
 
-   BBitmap* FetchBitmap(char *filename, uint8 mode);
-   status_t StoreTranslatorBitmap(BBitmap *bitmap, char *filename, uint32 type);
-   
-   void CopyRect(BRect zone_src,  BBitmap *la_source, BRect zone_dest, BBitmap *la_dest, uint8 nb_of_bytes);
-   void CopyRectWithMask(BRect zone_src,  BBitmap *la_source, BRect zone_dest, BBitmap *la_dest, BBitmap *le_mask, uint8 nb_of_bytes);
-   BBitmap* GrabRect(BRect zone_src,  BBitmap *la_source); 
-   
-   float ConvertUnits(float val, int32 src_unit,int32 dest_unit, float resolution, float res_units);
+#endif
 
-   
-   char dossier_app[NAME_SIZE];
-   void AppDir();
+void AppDir(BPath *path);
+BBitmap * LoadBitmap(char *filename);
+bool IsBPMFile(const char *path);
+BRect CenterChildRect(BRect parent, BRect child, bool constrain=true);
+BRect CenterToScreen(BRect child);
+BRect ConstrainToScreen(BRect rect);
+void UninvertRect(BPoint *oldpt, BPoint *newpt);
+void CopyRect(BRect sourcerect, BBitmap *sourcebmp, 
+					 BRect destrect, BBitmap *destbmp, uint8 colorspace_size);
+void FastCopyRect(BRect sourcerect, BBitmap *sourcebmp, 
+					 BRect destrect, BBitmap *destbmp, uint8 colorspace_size);
 
-  void NotImplemented();
-   BRect find_win_pos(float width, float height, BWindow *win_to_use_to_choose_screen); 
-   BRect find_win_pos_on_main_screen(float width, float height); 
+BMessage *Bitmap2Message(BBitmap *bmp);
+BBitmap *Message2Bitmap(BMessage *clip);
+void ApplyBitmap( BBitmap *sourcebmp, BRect sourcerect,
+					  BBitmap *destbmp,BRect destrect,uint8 blendmode);
 
-   BRect CheckRectangle(BRect ori_rect);
-   BBitmap* load_bmp(const char *le_nom);
-   void RescaleBitmap(BBitmap *src, BBitmap *dest,bool center_if_smaller);
+hsv_color RGBtoHSV(rgb_color rgbcol);
+rgb_color HSVtoRGB(hsv_color hsvcol);
+int32 CheckIntegralValue(BTextControl* field, int32 min, int32 max);
 
-	BWindow *progress_win;
-	bool progress_exists;	
-	
-	uint8 show_progress_load;
-	uint8 loading_in_progress;
-	
-	BWindow *mainWin,*toolWin,*brushWin,*paperWin,*layerWin;
-	BWindow *navWin, *infoWin,*optionWin;
-	BWindow *foreWin,*backWin, *texttoolWin;
-	
-    char version_txt[256];
-    char version_only_txt[256];
-	BTranslatorRoster *trans_roster;
-	translator_id translators[1024]; //just in case there are a lot of 'em1
-	void RGBtoHSV( float r, float g, float b, float *h, float *s, float *v );
-	void HSVtoRGB( float *r, float *g, float *b, float h, float s, float v ); 
+uint16 InvSine(float value);
+uint16 InvCosine(float value);
+void InitTrigTables(void);
+extern float sintable[360];
+extern float costable[360];
 
-	//used during filtering
-	BBitmap* sel_pic;
-	uint32 sel_length;
-	uint8 *sel_pic_bits;
-
-	};
-
-extern Utils util;
-
-#endif  

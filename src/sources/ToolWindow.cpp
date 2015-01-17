@@ -1,771 +1,364 @@
 #include "ToolWindow.h"
-#include "Dragger.h"
 
+#define THREE_TOOLBAR_WIDTH 73
+#define TWO_TOOLBAR_WIDTH 48
 
-ToolWindow::ToolWindow(BRect frame, const char *the_win_name, share *sh)
-				: BWindow(frame, the_win_name, B_FLOATING_WINDOW,
+ToolWindow::ToolWindow(BRect frame,bool ismaskmode)
+				: BWindow(frame,SpTranslate("Tools"), B_FLOATING_WINDOW,
 				B_NOT_MINIMIZABLE | B_NOT_RESIZABLE | B_NOT_ZOOMABLE | 
 				B_WILL_ACCEPT_FIRST_CLICK | B_AVOID_FOCUS)
 {
-shared=sh;
+toolview = new BView(Bounds(),"",B_FOLLOW_ALL,B_WILL_DRAW);
+toolview->SetViewColor(192,192,192);
+AddChild(toolview);
 
-BView *fond = new BView(Bounds(),"",B_FOLLOW_ALL,B_WILL_DRAW);
-fond->SetViewColor(216,216,216);
-AddChild(fond);
-#define BUTTON_X 24
-#define BUTTON_Y 23
+toolbara = new ToolbarView(BRect(0,0,23,23),"toolbara",B_FOLLOW_NONE,B_WILL_DRAW);
+toolbarb = new ToolbarView(BRect(24,0,48,23),"toolbarb",B_FOLLOW_NONE,B_WILL_DRAW);
+//toolbarc = new ToolbarView(BRect(49,0,73,23),"toolbarc",B_FOLLOW_NONE,B_WILL_DRAW);
+toolview->AddChild(toolbara);
+toolview->AddChild(toolbarb);
+//toolview->AddChild(toolbarc);
+toolbara->SetLayout(TOOLBAR_VERTICAL);
+toolbarb->SetLayout(TOOLBAR_VERTICAL);
+//toolbarc->SetLayout(TOOLBAR_VERTICAL);
 
-//base directory name
-sprintf(name,util.dossier_app);
-strcat(name,"/data/");
+icondir=new BPath;
+AppDir(icondir);
+icondir->Append("config");
 
-BRect rect;			
-			
-//BT_01
-rect.Set(0,0, BUTTON_X, BUTTON_Y );
-CreateButton("paintbrush.png","XXpaintbrush.png");
-button_01 = new BPictureButton(rect,"",off, on, new BMessage(BUTTON_01_MSG),B_TWO_STATE_BUTTON);
-bb_help.SetHelp(button_01,Language.get("PAINTBRUSH"));
+LoadButton(toolbara,"paintbrush","paintbrush.png","XXpaintbrush.png",new BMessage(TOOL_BRUSH));
+LoadButton(toolbara,"bucket","bucket.png","XXbucket.png",new BMessage(TOOL_FILL));
+LoadButton(toolbara,"line","line.png","XXline.png",new BMessage(TOOL_LINE));
+LoadButton(toolbara,"spline","spline.png","XXspline.png",new BMessage(TOOL_SPLINE));
+LoadButton(toolbara,"rect","rect.png","XXrect.png",new BMessage(TOOL_RECT));
+LoadButton(toolbara,"ellipse","ellipse.png","XXellipse.png",new BMessage(TOOL_ELLIPSE));
+LoadButton(toolbara,"text","text.png","XXtext.png",new BMessage(TOOL_TEXT));
+LoadButton(toolbara,"zoom","zoom.png","XXzoom.png",new BMessage(TOOL_ZOOM));
+toolbara->SetTarget((BLooper *)this);
 
-			
-//BT_02
-rect.OffsetBy(0, BUTTON_Y);
-CreateButton("bucket.png","XXbucket.png");
-button_02 = new BPictureButton(rect,"",off, on, new BMessage(BUTTON_02_MSG),B_TWO_STATE_BUTTON);
-bb_help.SetHelp(button_02,Language.get("BUCKET"));
+LoadButton(toolbarb,"picker","picker.png","XXpicker.png",new BMessage(TOOL_EYEDROPPER));
+LoadButton(toolbarb,"stamp","stamp.png","XXstamp.png",new BMessage(TOOL_STAMP));
+LoadButton(toolbarb,"wand","wand.png","XXwand.png",new BMessage(TOOL_WAND));
+LoadButton(toolbarb,"eraser","eraser.png","XXeraser.png",new BMessage(TOOL_ERASER));
+LoadButton(toolbarb,"frect","frect.png","XXfrect.png",new BMessage(TOOL_FRECT));
+LoadButton(toolbarb,"fellipse","fellipse.png","XXfellipse.png",new BMessage(TOOL_FELLIPSE));
+LoadButton(toolbarb,"mask","mask.png","XXmask.png",new BMessage(TOOL_MASK));
+LoadButton(toolbarb,"move","move.png","XXmove.png",new BMessage(TOOL_MOVE));
+toolbarb->SetTarget((BLooper *)this);
 
-//BT_03
-rect.OffsetBy(0, BUTTON_Y);
-CreateButton("line.png","XXline.png");
-button_03 = new BPictureButton(rect,"",off, on, new BMessage(BUTTON_03_MSG),B_TWO_STATE_BUTTON);
-bb_help.SetHelp(button_03,Language.get("LINE"));
+//LoadButton(toolbarc,"gradient","gradient.png","XXgradient.png",new BMessage(TOOL_GRADIENT));
+//toolbarc->SetTarget((BLooper *)this);
 
-//BT_04
-rect.OffsetBy(0, BUTTON_Y);
-CreateButton("spline.png","XXspline.png");
-button_04 = new BPictureButton(rect,"",off, on, new BMessage(BUTTON_04_MSG),B_TWO_STATE_BUTTON);
-bb_help.SetHelp(button_04,Language.get("SPLINE"));
+BRect rect;
+rect.left=0;
+rect.top=toolbara->Bounds().Height()+1;
+rect.bottom=rect.top+23;
+rect.right=23;
 
-//BT_05
-rect.OffsetBy(0, BUTTON_Y);
-CreateButton("rectangle.png","XXrectangle.png");
-button_05 = new BPictureButton(rect,"",off, on, new BMessage(BUTTON_05_MSG),B_TWO_STATE_BUTTON);
-bb_help.SetHelp(button_05,Language.get("RECTANGLE"));
+forebutton = new DrawButton(rect,"forebutton",TOGGLE_FORECOLOR,B_FOLLOW_NONE,B_WILL_DRAW);
+toolview->AddChild(forebutton);
 
-//BTB_06
-rect.OffsetBy(0, BUTTON_Y);
-CreateButton("ellipse.png","XXellipse.png");
-button_06 = new BPictureButton(rect,"",off, on, new BMessage(BUTTON_06_MSG),B_TWO_STATE_BUTTON);
-bb_help.SetHelp(button_06,Language.get("ELLIPSE"));
+rect.OffsetBy(24,0);
+backbutton = new DrawButton(rect,"backbutton",TOGGLE_BACKCOLOR,B_FOLLOW_NONE,B_WILL_DRAW);
+backbutton->SetViewColor(0,0,0);
+toolview->AddChild(backbutton);
 
-//BT_07
-rect.OffsetBy(0, BUTTON_Y);
-CreateButton("text.png","XXtext.png");
-button_07 = new BPictureButton(rect,"",off, on, new BMessage(BUTTON_07_MSG),B_TWO_STATE_BUTTON);
-bb_help.SetHelp(button_07,Language.get("TEXT"));
+forebutton->SetViewColor(255,255,255);
+backbutton->SetViewColor(0,0,0);
+forebutton->SetTarget(be_app);
+backbutton->SetTarget(be_app);
 
-//BT_08
-rect.OffsetBy(0, BUTTON_Y);
-CreateButton("zoom.png","XXzoom.png");
-button_08 = new BPictureButton(rect,"",off, on, new BMessage(BUTTON_08_MSG),B_TWO_STATE_BUTTON);
-bb_help.SetHelp(button_08,Language.get("ZOOM"));
+rect.OffsetBy(-48,25);
+rect.left=0;
+rect.right = 48;
+rect.bottom =rect.top+48;
 
+brushview = new DrawButton(rect,"brushview",TOGGLE_BRUSH_WINDOW,
+			B_FOLLOW_NONE,B_WILL_DRAW);
+toolview->AddChild(brushview);
 
-//change color
-rect.Set(BUTTON_X,0, (BUTTON_X)*2, BUTTON_Y );
+brushview->SetTarget(be_app);
 
-//BTB_01
-CreateButton("picker.png","XXpicker.png");
-button_b_01 = new BPictureButton(rect,"",off, on, new BMessage(BUTTON_B_01_MSG),B_TWO_STATE_BUTTON);
-bb_help.SetHelp(button_b_01,Language.get("PICKER"));
+rect.top=rect.bottom+1;
+rect.bottom=rect.top+12;
+rect.left=0;
+rect.right=48;
+fullscreen = new ToolbarView(rect,"fullscreen",B_FOLLOW_NONE,B_WILL_DRAW);
+toolview->AddChild(fullscreen);
 
-//BTB_02
-rect.OffsetBy(0, BUTTON_Y);
-CreateButton("stamp.png","XXstamp.png");
-button_b_02 = new BPictureButton(rect,"",off, on, new BMessage(BUTTON_B_02_MSG),B_TWO_STATE_BUTTON);
-bb_help.SetHelp(button_b_02,Language.get("STAMP"));
+// Windowed mode
+LoadButton(fullscreen,"full_none","full_none_up.png","full_none_down.png",new BMessage(SCREEN_FULL_NONE));
 
-//BTB_03
-rect.OffsetBy(0, BUTTON_Y);
-CreateButton("wand.png","XXwand.png");
-button_b_03 = new BPictureButton(rect,"",off, on, new BMessage(BUTTON_B_03_MSG),B_TWO_STATE_BUTTON);
-bb_help.SetHelp(button_b_03,Language.get("WAND"));
+// Fullscreen + menu
+LoadButton(fullscreen,"full_half","full_half_up.png","full_half_down.png",new BMessage(SCREEN_FULL_HALF));
 
-//BTB_04
-rect.OffsetBy(0, BUTTON_Y);
-CreateButton("sel_lasso.png","XXsel_lasso.png");
-button_b_04 = new BPictureButton(rect,"",off, on, new BMessage(BUTTON_B_04_MSG),B_TWO_STATE_BUTTON);
-bb_help.SetHelp(button_b_04,Language.get("LASSO"));
+// Fullscreen - menu
+LoadButton(fullscreen,"full_full","full_full_up.png","full_full_down.png",new BMessage(SCREEN_FULL_ALL));
+fullscreen->SetTarget((BLooper *)this);
 
-//BTB_05
-rect.OffsetBy(0, BUTTON_Y);
-CreateButton("sel_rect.png","XXsel_rect.png");
-button_b_05 = new BPictureButton(rect,"",off, on, new BMessage(BUTTON_B_05_MSG),B_TWO_STATE_BUTTON);
-bb_help.SetHelp(button_b_05,Language.get("SEL_RECT"));
-			
-//BTB_06
-rect.OffsetBy(0, BUTTON_Y);
-CreateButton("sel_ellipse.png","XXsel_ellipse.png");
-button_b_06 = new BPictureButton(rect,"",off, on, new BMessage(BUTTON_B_06_MSG),B_TWO_STATE_BUTTON);
-bb_help.SetHelp(button_b_06,Language.get("SEL_ELLIPSE"));
+ResizeTo(TWO_TOOLBAR_WIDTH,rect.bottom);	
 
-//BTB_07
-rect.OffsetBy(0, BUTTON_Y);
-CreateButton("mask.png","XXmask.png");
-button_b_07 = new BPictureButton(rect,"",off, on, new BMessage(BUTTON_B_07_MSG),B_TWO_STATE_BUTTON);
-bb_help.SetHelp(button_b_07,Language.get("MASKING"));
+// Center the fullscreen toolbar
+if(fullscreen->Bounds().Width()<TWO_TOOLBAR_WIDTH)
+	fullscreen->MoveBy((TWO_TOOLBAR_WIDTH-fullscreen->Bounds().right)/2,0);
 
-//BTB_08
-rect.OffsetBy(0, BUTTON_Y);
-CreateButton("move.png","XXmove.png");
-button_b_08 = new BPictureButton(rect,"",off, on, new BMessage(BUTTON_B_08_MSG),B_TWO_STATE_BUTTON);
-bb_help.SetHelp(button_b_08,Language.get("MOVE"));
-
-fond->AddChild(button_01);
-fond->AddChild(button_02);
-fond->AddChild(button_03);
-fond->AddChild(button_04);
-fond->AddChild(button_05);
-fond->AddChild(button_06);
-fond->AddChild(button_07);
-fond->AddChild(button_08);
-
-fond->AddChild(button_b_01);
-fond->AddChild(button_b_02);
-fond->AddChild(button_b_03);
-fond->AddChild(button_b_04);
-fond->AddChild(button_b_05);
-fond->AddChild(button_b_06);
-fond->AddChild(button_b_07);
-fond->AddChild(button_b_08);
-		
-button_01->SetValue(B_CONTROL_ON); //paintbrush is the default button
-rect.OffsetBy((BUTTON_X*-1), BUTTON_Y+1);
-
-rect.right-=2;
-rect.bottom-=1;
-rect.top+=1;
-
-rect.left+=1;
-BRect tep = rect;
-
-BView *f_fond = new BView(rect,"",B_FOLLOW_ALL,B_WILL_DRAW);
-tep = f_fond->Bounds();
-tep.InsetBy(1,1);
-fore_view = new ForeView(tep,shared);
-f_fond->AddChild(fore_view);
-
-rect.OffsetBy(BUTTON_X,0);
-BView *b_fond = new BView(rect,"",B_FOLLOW_ALL,B_WILL_DRAW);
-tep = b_fond->Bounds();
-tep.InsetBy(1,1);
-back_view = new BackView(tep,shared);
-b_fond->AddChild(back_view);
-
-b_fond->SetViewColor(0,0,0);
-f_fond->SetViewColor(0,0,0);
-
-
-rect.OffsetBy((BUTTON_X*-1), BUTTON_Y);
-rect.left =0;
-rect.right = Bounds().right;
-rect.bottom +=BUTTON_Y;
-rect.InsetBy(1,1);
-
-BView *br_fond = new BView(rect,"",B_FOLLOW_ALL,B_WILL_DRAW);
-tep = br_fond->Bounds();
-tep.InsetBy(1,1);
-brush_view = new BrushView(tep,shared);;
-br_fond->AddChild(brush_view);
-
-
-rect.OffsetBy(0, (BUTTON_Y*2)-1);
-BView *pp_fond = new BView(rect,"",B_FOLLOW_ALL,B_WILL_DRAW);
-tep = pp_fond->Bounds();
-tep.InsetBy(1,1);
-
-paper_view = new PaperView(tep,shared);;
-
-
-BScrollView *paper_sc_view = new BScrollView("sc", paper_view,B_FOLLOW_NONE, B_WILL_DRAW, true,true);
-pp_fond->AddChild(paper_sc_view);
-paper_view->parent_scroller = paper_sc_view;
-
-br_fond->SetViewColor(0,0,0);
-pp_fond->SetViewColor(0,0,0);
-
-paper_view->SetViewColor(216,216,216);
-
-/*
-BDragger *drag_paper = new BDragger(BRect(0,0,16,16), paper_view, B_FOLLOW_ALL, B_WILL_DRAW);
-paper_view->AddChild(drag_paper);
-
-*/  
-//  BDragger(BRect frame, BView *target, uint32 resizingMode = B_FOLLOW_NONE, uint32 flags = B_WILL_DRAW) 
-
-fond->AddChild(f_fond);
-fond->AddChild(b_fond);
-
-fond->AddChild(br_fond);
-fond->AddChild(pp_fond);
-   
-bb_help.SetHelp(fore_view,Language.get("FOREGROUND"));
-bb_help.SetHelp(back_view,Language.get("BACKGROUND"));
-bb_help.SetHelp(brush_view,Language.get("BRUSHES"));
-bb_help.SetHelp(paper_view,Language.get("PAPERS"));
-
-
-//full_none
-rect.Set(0,0, 14-1, 13-1 );
-rect.OffsetBy(1,Bounds().Height()-14);
-CreateButton("full_none_up.png","full_none_down.png");
-full_none = new BPictureButton(rect,"",off, on, new BMessage(SET_FULL_NONE),B_TWO_STATE_BUTTON);
-bb_help.SetHelp(full_none,Language.get("WINDOWED"));
-
-//full_half
-rect.OffsetBy(14+2,0);
-CreateButton("full_half_up.png","full_half_down.png");
-full_half = new BPictureButton(rect,"",off, on, new BMessage(SET_FULL_HALF),B_TWO_STATE_BUTTON);
-bb_help.SetHelp(full_half,Language.get("NO_TITLE"));
-
-//full_none
-rect.OffsetBy(14+2,0);
-CreateButton("full_full_up.png","full_full_down.png");
-full_total = new BPictureButton(rect,"",off, on, new BMessage(SET_FULL_TOTAL),B_TWO_STATE_BUTTON);
-bb_help.SetHelp(full_total,Language.get("FULL_SCREEN"));
-	
-fond->AddChild(full_none);
-fond->AddChild(full_half);
-fond->AddChild(full_total);
-
-ThePrefs.tool_win_open=true;
-util.toolWin = this;
-
+be_app->PostMessage(TOOL_BRUSH);
 }
 
 ToolWindow::~ToolWindow()
 {
-	ThePrefs.tool_win_open=false;
-	shared->display_menu->ItemAt(6)->SetMarked(false);
-	ThePrefs.tool_frame = Frame(); //save for later
-	
-	if (ThePrefs.fore_selector_open == true)
-	{ 	foreWindow->Lock();
-		foreWindow->Close(); 
-	}
-	if (ThePrefs.back_selector_open == true)
-	{ 	backWindow->Lock();
-		backWindow->Close();
-	}
-
+	delete icondir;
 }
-
-void ToolWindow::CreateButton(char nm[255],char nm2[255])
+/*
+bool ToolWindow::QuitRequested()
 {
-	BRect rect;
-	rect.Set(0,0, BUTTON_X, BUTTON_Y );
-					
-	downBitmap = BTranslationUtils::GetBitmap('bits',nm);
-	upBitmap = BTranslationUtils::GetBitmap('bits',nm2);
-
-	//extra security
-	if (upBitmap==NULL) upBitmap = new BBitmap(rect, B_RGB32);
-	if (downBitmap==NULL) downBitmap = new BBitmap(rect, B_RGB32);
-		
-		
-	//tempview for creating the picture
-	BView *tempView = new BView( rect, "temp", B_FOLLOW_NONE, B_WILL_DRAW );
-	AddChild(tempView);
-
-	//create on picture
-	tempView->BeginPicture(new BPicture); 
-	tempView->DrawBitmap(upBitmap);
-	on = tempView->EndPicture();
-	
-	//create off picture
-   	tempView->BeginPicture(new BPicture); 
-   	tempView->DrawBitmap(downBitmap);
-   	off = tempView->EndPicture();
-   	
-   	//get rid of tempview
- 	RemoveChild(tempView);
-   	delete tempView;
-	delete upBitmap;
-   	delete downBitmap;
-   			
-   			
+	be_app->PostMessage(B_QUIT_REQUESTED);
+	return(true);
 }
-
+*/
 void ToolWindow::MessageReceived(BMessage *msg)
 {
-BRect rect;
-
-BMessage *tmp;
-
 	switch (msg->what)
 	{
-		case B_KEY_DOWN:
-			util.mainWin->PostMessage(msg);
+	   	case TOOL_BRUSH:
+			SelectTool(currenttool,false);
+	   		currenttool=msg->what;
+			be_app->PostMessage(msg);
+   	 		break; 	
+
+	   	case TOOL_FILL:
+			SelectTool(currenttool,false);
+	   		currenttool=msg->what;
+			be_app->PostMessage(msg);
+   	 		break; 	
+
+	   	case TOOL_LINE:
+			SelectTool(currenttool,false);
+	   		currenttool=msg->what;
+			be_app->PostMessage(msg);
+   	 		break; 	
+
+	   	case TOOL_SPLINE:
+			SelectTool(currenttool,false);
+	   		currenttool=msg->what;
+			be_app->PostMessage(msg);
+   	 		break; 	
+
+		case TOOL_RECT:
+			SelectTool(currenttool,false);
+	   		currenttool=msg->what;
+			be_app->PostMessage(msg);
+   	 		break; 	
+
+	   	case TOOL_ELLIPSE:
+			SelectTool(currenttool,false);
+	   		currenttool=msg->what;
+			be_app->PostMessage(msg);
+   	 		break; 	
+
+	   	case TOOL_TEXT:
+			be_app->PostMessage(msg);
+   	 		break; 	
+
+		case TEXTWIN_CLOSED:
+			toolbara->SetButton("text",false);
 			break;
-		
-		
-	   	case BUTTON_01_MSG:
-		   	DeselectAll();  button_01->SetValue(B_CONTROL_ON);
-   		 	shared->active_tool=PAINTBRUSH;
+			
+	   	case TOOL_ZOOM:
+			SelectTool(currenttool,false);
+	   		currenttool=msg->what;
+			be_app->PostMessage(msg);
    	 		break; 	
 
-	   	case BUTTON_02_MSG:
-		   	DeselectAll();  button_02->SetValue(B_CONTROL_ON);
-   		 	shared->active_tool=BUCKET;
+		// Second column of buttons
+
+	   	case TOOL_EYEDROPPER:
+			SelectTool(currenttool,false);
+	   		currenttool=msg->what;
+			be_app->PostMessage(msg);
    	 		break; 	
 
-	   	case BUTTON_03_MSG:
-		   	DeselectAll();  button_03->SetValue(B_CONTROL_ON);
-	   	 	shared->active_tool=LINE;
+	   	case TOOL_STAMP:
+			SelectTool(currenttool,false);
+	   		currenttool=msg->what;
+			be_app->PostMessage(msg);
    	 		break; 	
 
-	   	case BUTTON_04_MSG:
-		   	DeselectAll();  button_04->SetValue(B_CONTROL_ON);
-   		 	shared->active_tool=SPLINE;
+	   	case TOOL_WAND:
+			SelectTool(currenttool,false);
+	   		currenttool=msg->what;
+			be_app->PostMessage(msg);
    	 		break; 	
 
-	   	case BUTTON_05_MSG:
-		   	DeselectAll();  button_05->SetValue(B_CONTROL_ON);
-   		 	shared->active_tool=RECTANGLE;
+	   	case TOOL_ERASER:
+			be_app->PostMessage(msg);
    	 		break; 	
 
-	   	case BUTTON_06_MSG:
-		   	DeselectAll();  button_06->SetValue(B_CONTROL_ON);
-   		 	shared->active_tool=ELLIPSE;
+	   	case TOOL_FRECT:
+			SelectTool(currenttool,false);
+	   		currenttool=msg->what;
+			be_app->PostMessage(msg);
    	 		break; 	
 
-	   	case BUTTON_07_MSG:
-//		   	DeselectAll();  button_07->SetValue(B_CONTROL_ON);
-// 		 	shared->active_tool=TEXT;
-			util.mainWin->PostMessage('sttw');
+	   	case TOOL_FELLIPSE:
+			SelectTool(currenttool,false);
+	   		currenttool=msg->what;
+			be_app->PostMessage(msg);
    	 		break; 	
 
-	   	case BUTTON_08_MSG:
-		   	DeselectAll();  button_08->SetValue(B_CONTROL_ON);
-   		 	shared->active_tool=ZOOM;
-   	 		break; 	
-
-		//---------------------------------------------------
-
-	   	case BUTTON_B_01_MSG:
-		   	DeselectAll();  button_b_01->SetValue(B_CONTROL_ON);
-   		 	shared->active_tool=PICKER;
-   	 		break; 	
-
-	   	case BUTTON_B_02_MSG:
-		   	DeselectAll();  button_b_02->SetValue(B_CONTROL_ON);
-   		 	shared->active_tool=STAMP;
-   	 		break; 	
-
-	   	case BUTTON_B_03_MSG:
-		   	DeselectAll();  button_b_03->SetValue(B_CONTROL_ON);
-   		 	shared->active_tool=WAND;
-   	 		break; 	
-
-	   	case BUTTON_B_04_MSG:
-		   	DeselectAll();  button_b_04->SetValue(B_CONTROL_ON);
-   		 	shared->active_tool=LASSO;
-   	 		break; 	
-
-	   	case BUTTON_B_05_MSG:
-		   	DeselectAll();  button_b_05->SetValue(B_CONTROL_ON);
-   		 	shared->active_tool=SEL_RECT;
-   	 		break; 	
-
-	   	case BUTTON_B_06_MSG:
-		   	DeselectAll();  button_b_06->SetValue(B_CONTROL_ON);
-   		 	shared->active_tool=SEL_ELLIPSE;
-   	 		break; 	
-
-	   	case BUTTON_B_07_MSG:
-		   	//quick mask
-			if (ThePrefs.mask_mode==ON) 
-			{	ThePrefs.mask_mode=OFF; 
-				ThePrefs.mask_activated=ON; 
-				button_b_07->SetValue(B_CONTROL_OFF);
-			}
-			else 
-			{	ThePrefs.mask_activated = OFF;
-				ThePrefs.mask_mode=ON;
-				button_b_07->SetValue(B_CONTROL_ON);
-			}
-		
-			if (shared->act_img!=NULL) 
-		   	{
-   			  	tmp = new BMessage(UPDATE_ME);
-				tmp->AddRect("zone",BRect(0,0,shared->act_img->pix_per_line-1,shared->act_img->pix_per_row-1));
-				util.mainWin->PostMessage(tmp); 
-   		 	}
-   	 		util.mainWin->PostMessage(UPDATE_TITLE); 
+	   	case TOOL_MASK:
+			be_app->PostMessage(msg);
 	   	 	break; 	 
 		
-		case SET_MASK_BUTTON_OFF:		
-			button_b_07->SetValue(B_CONTROL_OFF);
+		case TOOL_MOVE:
+			SelectTool(currenttool,false);
+	   		currenttool=msg->what;
+			be_app->PostMessage(msg);
+   	 		break;
+
+		case TOOL_GRADIENT:
+			SelectTool(currenttool,false);
+	   		currenttool=msg->what;
+			be_app->PostMessage(msg);
 			break;
-		
-		case BUTTON_B_08_MSG:
-		   	DeselectAll();  button_b_08->SetValue(B_CONTROL_ON);
-   		 	shared->active_tool=MOVE;
-   	 		break;
-   	 	 
-   	 	 
-   	 	case SET_FULL_NONE:
-	   	 	full_none->SetValue(B_CONTROL_ON);
-   		 	full_half->SetValue(B_CONTROL_OFF);
-   	 		full_total->SetValue(B_CONTROL_OFF);
-		 	util.mainWin->PostMessage(SET_FULL_NONE);
+
+   	 	case SCREEN_FULL_NONE:
+		   	fullscreen->DeselectAll();
+			be_app->PostMessage(msg);
    	 		break;
    	 	
-   	 	
-   	 	case SET_FULL_HALF:
-	   	 	full_none->SetValue(B_CONTROL_OFF);
-   		 	full_half->SetValue(B_CONTROL_ON);
-   	 		full_total->SetValue(B_CONTROL_OFF);
-	   	 	util.mainWin->PostMessage(SET_FULL_HALF);
+   	 	case SCREEN_FULL_HALF:
+		   	fullscreen->DeselectAll();
+			be_app->PostMessage(msg);
    		 	break;
    	 	
-   	 	
-   	 	case SET_FULL_TOTAL:
-	   	 	full_none->SetValue(B_CONTROL_OFF);
-   		 	full_half->SetValue(B_CONTROL_OFF);
-   	 		full_total->SetValue(B_CONTROL_ON);
-	   	 	util.mainWin->PostMessage(SET_FULL_TOTAL);
+   	 	case SCREEN_FULL_ALL:
+		   	fullscreen->DeselectAll();
+			be_app->PostMessage(msg);
    		 	break;
-   	 	
-   	 	
-   	 	case COL_SELECTED:
-	   	 	fore_view->SetViewColor(shared->fore_color); 	
-   		 	back_view->SetViewColor(shared->back_color);
-			fore_view->Invalidate();	back_view->Invalidate();
-			// restore color leaving the picker
-			if (ThePrefs.info_win_open==true) 
-				util.infoWin->PostMessage(COL_CHANGED);
-			break;
-
-		case FORE_CLICKED:
-	   	 	fore_view->SetViewColor(shared->fore_color);
-			rect = ThePrefs.fore_color_frame;
-		
-			if (ThePrefs.fore_selector_open==true) 
-			{
-				foreWindow->Lock(); foreWindow->Close(); 
-				ThePrefs.fore_selector_open=false; 
-			}
-			else
-			{
-				foreWindow = new ColWindow(ON,rect,Language.get("FOREGROUND"),shared); 
- 				util.foreWin = foreWindow;
- 				foreWindow->Show();
-				ThePrefs.fore_selector_open=true;
- 			}
-			break;
-
-		case BACK_CLICKED:
-	   	 	back_view->SetViewColor(shared->back_color);
-			rect = ThePrefs.back_color_frame;
-		
-			if (ThePrefs.back_selector_open==true)
-			{ 	backWindow->Lock(); 
-				backWindow->Close();
-				ThePrefs.back_selector_open=false; 
-			}
-			else
-			{
-				backWindow = new ColWindow(OFF,rect,Language.get("BACKGROUND"),shared); //OFF = mode back 
-	 			util.backWin = backWindow;
- 				backWindow->Show();
- 				ThePrefs.back_selector_open=true;
-			}
-			break;
-		
-		case BRUSH_CLICKED:
-			util.mainWin->PostMessage(SHOW_BRUSH_WIN);
-			break;
-		
-		case TEXTURE_CLICKED:
-			util.mainWin->PostMessage(SHOW_PAPER_WIN);
-			break;
-		
-		case BRUSH_CHANGED:
-			brush_view->Invalidate();
-			break;
-
-		case PAPER_CHANGED:
-			paper_view->Invalidate();
-			break;
 
 		default:
-			BWindow::MessageReceived( msg);
+			BWindow::MessageReceived(msg);
    	}
-
-//notify parent window
-util.mainWin->PostMessage(new BMessage(TOOL_CHANGED)); 
-
-
-}//end MessageReceived
-
-
-void ToolWindow::DeselectAll()
-{ 
-
-button_01->SetValue(B_CONTROL_OFF);
-button_02->SetValue(B_CONTROL_OFF);
-button_03->SetValue(B_CONTROL_OFF);
-button_04->SetValue(B_CONTROL_OFF);
-button_05->SetValue(B_CONTROL_OFF);
-button_06->SetValue(B_CONTROL_OFF);
-button_07->SetValue(B_CONTROL_OFF);
-button_08->SetValue(B_CONTROL_OFF);
-
-button_b_01->SetValue(B_CONTROL_OFF);
-button_b_02->SetValue(B_CONTROL_OFF);
-button_b_03->SetValue(B_CONTROL_OFF);
-button_b_04->SetValue(B_CONTROL_OFF);
-button_b_05->SetValue(B_CONTROL_OFF);
-button_b_06->SetValue(B_CONTROL_OFF);
-button_b_08->SetValue(B_CONTROL_OFF);
-
 }
 
-ForeView::ForeView(BRect rec, share *sh) :
-	BView(rec,NULL, B_FOLLOW_ALL, B_WILL_DRAW)
-{
-	shared=sh;
-	SetViewColor(shared->fore_color);
-	dragging=false;
-	pressed=false;
+#ifndef CHILDWIN_MOVED
+	#define CHILDWIN_MOVED 'cwmv'
+#endif
 
+void ToolWindow::FrameMoved(BPoint origin)
+{
+	BMessage *msg=new BMessage(CHILDWIN_MOVED);
+	msg->AddPoint("toolwin",origin);
+	be_app->PostMessage(msg);
 }
 
-BackView::BackView(BRect rec, share *sh) :
-	BView(rec,NULL, B_FOLLOW_ALL, B_WILL_DRAW)
-{
-	shared=sh;
-	SetViewColor(shared->back_color);
-	dragging=false;
-	pressed=false;
+rgb_color ToolWindow::GetColor(bool fore=true)
+{	
+	if(fore)
+		return forebutton->ViewColor();
+	else
+		return backbutton->ViewColor();
 }
 
-BrushView::BrushView(BRect rec, share *sh) :
-	BView(rec, NULL, B_FOLLOW_ALL, B_WILL_DRAW)
-{
-	shared=sh;
-	SetViewColor(216,216,216,216);
-}
-
-PaperView::PaperView(BRect rec, share *sh) :
-	BView(rec,NULL, B_FOLLOW_ALL, B_WILL_DRAW)
-{
-	shared=sh;
-	SetViewColor(216,216,216,216);
-}
-
-void BrushView::Draw(BRect update_rect)
-{
-
-	//DrawBitmap(new BBitmap(Bounds(),B_RGB32),shared->the_brush_24->Bounds(),Bounds()); //on efface l'ancienne (pour si plus grand)
-	SetHighColor(255,255,255);
-	//erase old one
-	FillRect(Bounds(),B_SOLID_HIGH);
-
-
-	if ((shared->the_brush_24->Bounds().Height() <  Bounds().Height() ) &&
-					(shared->the_brush_24->Bounds().Width() <  Bounds().Width() )  )
-	{
-		 BPoint pt;
-		 pt.x = (Bounds().Width() - shared->the_brush_24->Bounds().Width())/2;
-		 pt.y = (Bounds().Height() - shared->the_brush_24->Bounds().Height())/2;
-		 DrawBitmap(shared->the_brush_24, BPoint(pt));
+void ToolWindow::SetColor(rgb_color color, bool fore=true)
+{	
+	if(fore)
+	{	forebutton->SetViewColor(color);
+		forebutton->Invalidate();
 	}
 	else
-		DrawBitmap(shared->the_brush_24,shared->the_brush_24->Bounds(),Bounds());
-
+	{	backbutton->SetViewColor(color);
+		backbutton->Invalidate();
+	}
 }
 
-void PaperView::Draw(BRect update_rect)
+bool ToolWindow::LoadButton(ToolbarView *toolbar,const char *name,const char *onname, 
+			const char *offname, BMessage *msg)
 {
-	SetHighColor(255,255,255);
-	FillRect(Bounds(),B_SOLID_HIGH); // erase old one
+	BString iconpath;
+	BBitmap *on,*off;
 
-	DrawBitmap(shared->paper_24,BPoint(0,0));
+	iconpath=icondir->Path();
+	iconpath+="/"; iconpath+=onname;
+	on=LoadBitmap((char *)iconpath.String());
+	if(on==NULL)
+		on=BTranslationUtils::GetBitmap('bits',onname);
+
+	iconpath=icondir->Path();
+	iconpath+="/"; iconpath+=offname;
+	off=LoadBitmap((char *)iconpath.String());
+	if(off==NULL)
+		off=BTranslationUtils::GetBitmap('bits',offname);
+
+	toolbar->AddButton(name,on,off,msg);
+
+	return true;
 }
 
-
-
-void BrushView::MouseDown(BPoint point)
+void ToolWindow::SelectTool(int32 tool,bool value)
 {
-	Window()->PostMessage(new BMessage(BRUSH_CLICKED)); 
-
-}
-
-void PaperView::MouseDown(BPoint point)
-{
-	
-uint32 buttons;
-BPoint start,end;
-GetMouse(&start, &buttons);
-
-if (buttons==B_SECONDARY_MOUSE_BUTTON)
-{ 
-	//pour que cette routine puisse fonctionner correctement faut que frameResized()
-	//ajuste les scrollbars...
-
-	//remet la taille possible des scrollbars au nécessaire
-	//dragging=true;
-
-
-	GetMouse(&start, &buttons);
-	BRect v_rect=Frame();
-	BPoint delta;
-
-	//Right button drags the window
-    do 
-    { 
-	   	GetMouse(&end, &buttons);
-		if (start != end)
-      	{
-
-  	 		delta=start-end;      	 	
-
-			//bounds-checking on the scrollbar
-				
-			//si nég et barre tout en haut à gauche on scrolle pas...
-			if (delta.x < 0 && parent_scroller->ScrollBar(B_HORIZONTAL)->Value() == 0)  delta.x=0;
-			if (delta.y < 0 && parent_scroller->ScrollBar(B_VERTICAL)->Value()   == 0)  delta.y=0;
-
-
-			//si pos
-			if (delta.x > 0 && (parent_scroller->ScrollBar(B_HORIZONTAL)->Value() )   >= 
-							shared->paper_24->Bounds().Width()- (v_rect.right )-1) 
-				delta.x=0;
-				
-			if (delta.y > 0 && (parent_scroller->ScrollBar(B_VERTICAL)->Value() )  >= 
-							shared->paper_24->Bounds().Height()-(v_rect.bottom ) -1)
-				delta.y=0;
-
-   	 		ScrollBy(delta.x,delta.y);
-   			start=end;
-			start.x += delta.x; //car quand on scrolle le BPoint change aussi!!!
-			start.y += delta.y; //faut le redécaler d'autant
-			//v_rect.PrintToStream();
-			Draw(Bounds());
-
-		}
-	} while ( buttons ); 
-
-
-	Invalidate();
-}
-else
-	Window()->PostMessage(new BMessage(TEXTURE_CLICKED)); 
-}
-
-void BackView::MessageReceived(BMessage *ms)
-{
-int32 r,g,b;
-
-	switch(ms->what)
+	switch(currenttool)
 	{
-		case SET_TO_COLOR:
-			ms->FindInt32("r",&r);
-			ms->FindInt32("g",&g);
-			ms->FindInt32("b",&b);
-			
-			shared->back_color.red 	 = uint8 (r);
-			shared->back_color.green = uint8 (g);
-			shared->back_color.blue	 = uint8 (b);
-			Window()->PostMessage(COL_SELECTED);
+		case TOOL_BRUSH:
+			toolbara->SetButton("paintbrush",value);
+			break;
+	   	case TOOL_FILL:
+			toolbara->SetButton("bucket",value);
+   	 		break; 	
+
+	   	case TOOL_LINE:
+			toolbara->SetButton("line",value);
+   	 		break; 	
+
+	   	case TOOL_SPLINE:
+			toolbara->SetButton("spline",value);
+   	 		break; 	
+
+		case TOOL_RECT:
+			toolbara->SetButton("rect",value);
+   	 		break; 	
+
+	   	case TOOL_ELLIPSE:
+			toolbara->SetButton("ellipse",value);
+   	 		break; 	
+
+	   	case TOOL_ZOOM:
+			toolbara->SetButton("zoom",value);
+   	 		break; 	
+
+		// Second column of buttons
+
+	   	case TOOL_EYEDROPPER:
+			toolbarb->SetButton("picker",value);
+   	 		break; 	
+
+	   	case TOOL_STAMP:
+			toolbarb->SetButton("stamp",value);
+   	 		break; 	
+
+	   	case TOOL_WAND:
+			toolbarb->SetButton("wand",value);
+   	 		break; 	
+
+	   	case TOOL_FRECT:
+			toolbarb->SetButton("frect",value);
+   	 		break; 	
+
+	   	case TOOL_FELLIPSE:
+			toolbarb->SetButton("fellipse",value);
+   	 		break; 	
+
+		case TOOL_MOVE:
+			toolbarb->SetButton("move",value);
+   	 		break;
+   	 	
+   	 	//  Third column of buttons
+   	 	
+   	 	case TOOL_GRADIENT:
+ 	 		toolbarc->SetButton("gradient",value);
+   	 		break;
+		default:
 			break;
 	}
-}
-
-void ForeView::MessageReceived(BMessage *ms)
-{
-
-int32 r,g,b;
-
-	switch(ms->what)
-		{
-			case SET_TO_COLOR:
-			ms->FindInt32("r",&r);
-			ms->FindInt32("g",&g);
-			ms->FindInt32("b",&b);
-			
-			shared->fore_color.red 	 = uint8 (r);
-			shared->fore_color.green = uint8 (g);
-			shared->fore_color.blue	 = uint8 (b);
-			Window()->PostMessage(COL_SELECTED);
-			break;
-		}
-}
-
-
-void BackView::MouseUp(BPoint point)
-{
-	if (dragging == false)
-		Window()->PostMessage(new BMessage(BACK_CLICKED)); 
-}
-
-
-void ForeView::MouseUp(BPoint point)
-{
-	if (dragging == false)
-		Window()->PostMessage(new BMessage(FORE_CLICKED)); 
-}
-
-
-void BackView::MouseMoved(BPoint where, uint32 transit, const BMessage* dragDropMsg)
-{
-	if (pressed ==true && old_pos != where) 
-	{ 	dragging = true;
-		pressed = false;
-	}
-}
-
-void ForeView::MouseMoved(BPoint where, uint32 transit, const BMessage* dragDropMsg)
-{
-	if (pressed ==true && old_pos != where)
-	{ 	dragging = true;
-		pressed = false;
-	}
-}
-
-
-void BackView::MouseDown(BPoint point)
-{
-	old_pos = point;
-	dragging = false;
-	pressed = true;
-	 
-	//drag
-	BMessage message(SET_TO_COLOR);
-	message.AddInt32("r",shared->back_color.red);
-	message.AddInt32("g",shared->back_color.green);
-	message.AddInt32("b",shared->back_color.blue);
-	DragMessage(&message, Bounds()); 
-}
-
-void ForeView::MouseDown(BPoint point)
-{
-	old_pos = point;
-
-	dragging = false;
-	pressed = true;
-	
-	//drag
-	BMessage message(SET_TO_COLOR);
-	message.AddInt32("r",shared->fore_color.red);
-	message.AddInt32("g",shared->fore_color.green);
-	message.AddInt32("b",shared->fore_color.blue);
-	DragMessage(&message, Bounds()); 
-}
-
-void ToolWindow::FrameMoved(BPoint screenPoint)
-{
- 	//keep in front of drawing window
 }

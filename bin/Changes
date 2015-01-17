@@ -1,0 +1,293 @@
+BePhotoMagic New Codebase
+
+3.0 (0.62 release)
+Added beginnings of BPMWindow::UpdateOptionsWindow
+Fixed tolerance bug for Fill tool
+Some fixes for ApplyBitmap (still buggy)
+Fixed weird alpha-redraw bug - disappearing SuperNova
+FEllipse is now undone in 1 keypress (a friggin semicolon!! sheesh...)
+Minimum window size limit added
+
+2.9
+Disabled gradient button code (thus, gradient code, as well) in ToolWindow
+Changing layers updates Opacity slider
+Brush window display bug fixed
+Revamped LayerWindow-MainWindow communication (probably still buggy...)
+Added rudimentary menuitem disablement
+Killed extra PicView::Draw() calls
+Changes to Undo header for MultiLayer support - *this close* to Undo layer operations
+BZip2 layer compression debugged. Works perfectly AFAIK
+
+2.8
+Added a base "transparent" pattern - transparency on Layer 0 works
+Bolted on Radial and Rectangular gradient code (not all done yet)
+Fixed a BGColorwin preferences validation bug
+MouseCam position/visible saved in preferences
+Added F2/F3 mousewin shortcuts, mousewin GUI tweaks
+Removed ToolWindow toggle crasher
+Fixed nonworking Triangle menu commands
+
+2.7
+MouseCam added
+Undoing an FRect takes only one keypress now
+SaveChanges notification works all the time - Quits/Closes are cancelled on save
+Killed endless loop problem in Fill tool
+Added image previews and OpenPanel classs
+Added realtime preview code to FilterWindow (easier than thought!)
+Fixed alpha redraw bugs (amazing what some coffee and a deadlisting can do....)
+Bolted on rewritten, skinnable toolbar - total code less than ToolWindow.cpp before(!)
+
+2.6
+BPMFile can write (but not read) bz2ed project files
+Changing images/creating an image now updates brush controls
+Tweaked UpdateLayerNumber to include the condition that images aren't open (oops ;^D) 
+Fixed Brush undo - multiple small bugs
+Numerous UI tweaks
+Added crash-prone CopyLayerToClipboard and PasteAsNewImage code (disabled)
+Tweaked UserBrushes placement code
+Fixed a Mask mode display bug - still needs work
+Toolbar shortcuts now update toolbar buttons (previously broken)
+
+2.5
+Removed bug in Divide blending mode in Paintbrush
+Added Stamp() function, not that it works well right now. :^(
+Copies of active layer to Clipboard now implemented, but buggy
+Nuked a selection-related crasher when opening BPM images
+Toolbar brush display and layerwindow updated opening BPM images
+Serious cleanup/retooling of fullscreen code
+Validation of frames kept in the preferences
+Color pickers now opened on start if preferences say so
+Unbroke the updating of the optionwindow + reopen bugfix
+
+2.4
+Userbrush view no longer chokes on non-image files
+Undo saves brush settings & changes controls (buggy, but works)
+Beginnings of using tools on mask. Very buggy.
+Erase mode tweak - shape now erased.
+FilterWindow has a desktop view. Ahhh... no more white window background....
+Stamp tool now shows the offset - no drawing yet
+Killed a New-Close-Open crasher
+
+2.3 (0.61 release)
+"Removed" now-unnecessary BPMView::ApplyBeGraphics()
+Added rudimentary save-changes notification - doesn't work on call to File|Quit
+Changed in quit notification to allow for new preferences method (childwin)
+Implemented a preferences class
+Child windows are children of main window
+Removed filterwin-quit crasher
+Added code to prevent images > 30MB
+Color & brush windows come up when toolbar is clicked - still notifies be_app
+FINALLY resolved the TextWin-ToolWin sync problem
+Resolved the Erasemode/Maskmode button sync bugs
+FilterWindow shows title of filter
+
+2.2
+Tweaked ApplyBitmap
+Added rudimentary infrastructure for selections
+FilterWindow zooms in/out
+Tweaked AboutWindow to fit new banner graphic
+Erase mode implemented - rudimentary
+LayerWindow is now a child of BPMWindow, not BPMApp - speedup from less msg use
+Updated PointStack class to use BLists and (hopefully) add a major speedup
+Added UpdateLayerNumber function to cut down on code redundancy
+Undo can now be emptied with a function call
+Blendmode menu in LayerWindow updated when active layer changes
+
+2.1
+Fixed (I hope) a few bugs having to do with undo-paint-undo causing crashes
+Added Triangle menu to layer window
+Added Merge Down capability to allow for ApplyBitmap testing
+Speedup change for CopyRect->FastCopyRect() - uses DrawBitmap, not memcpy. 
+FINALLY killed the hanger bug in the Undo code
+Fixed a crasher when using line tool
+Added undo to work with a load of things (brush changes, line, brush, rect,etc.)
+Filled Rect and Ellipse tools work better, but not perfectly yet
+
+2.0	(0.60 release)
+Removed BitmapAccessor and BBitmapAccessor (apparently not needed anymore)
+Removed crash when undo array gets used up (an off-by-1 error. ARRRRRGH!!!!)
+Added Fill options
+OptionsWindow title updated for eyedropper tool
+Added, but disabled, Rect options
+Changed BePhotoMagic preferences filename - parallel compatibility
+Fill tool no longer limited in zoomed-out modes - I think it actually works now
+
+1.9
+Eyedropper code added
+User notified of unopenable images
+App Busy state implemented + global messaging access
+Fixed a CenterImageView bug which somehow creeped in outta nowhere
+Redid Utils::LoadBitmap to load bitmaps "the hard way" - much less error-prone
+Child window positions are completely remembered (no more no-close amnesia)
+Wait notifications added in certain slow spots
+Tweaked and Improved(I think) scrollbar use
+Added mimetype write to BePhotoMagic files
+Save panel now disables translator selection for BPM files
+Undo has temporary workaround for Paintbrush
+Line, (F)Rect, (F)Ellipse can be undone
+Fixed bug in InvCosine function
+Layer opacity factored into layer redraw (UpdateDisplayImage)
+Added brush-based Rect/Ellipse functions
+pre-rollback 1.9 Undo code brought in, but disabled due to *severe* bugs
+
+1.8
+Fixed a (formerly) mysterious refresh bug in BPMView::Draw(void)
+Fixed previously unknown layer opacity slider bug in LayerView constructor
+Removed Paint-on-Paint blending mode bug (hallelujah!)
+Previous 1.9 TNORMAL brush bug also fixed with Paint-on-Paint bug
+Added Flatten Image, Make Composite Layer, Duplicate Layer, Move Up/Down/Top/Bottom
+Removed Layer 0 alpha test code from UpdateDisplayImage()
+Fixed default MIME type/signature bug in TranslatorExport
+Window frames are saved into preferences
+Rect/Ellipse/Line rubberbanding in large images now work *much* faster
+ToolWindow frame/isopen is saved just like other child windows (options,brush, etc)
+Fixed toolwindow-reopen-color-reset bug
+Crashes from close/quit while using preview or painting squashed
+Line tool uses step option
+Stray mouseups ignored
+Initial program start + open image now actually shows brush in toolbar
+Fill tool not complete, but significantly faster and more stable
+Added gradient button to resource file
+
+1.7
+paintbrush clipping works properly
+Added old/slow Fill tool
+Filters & previews work on a rudimentary level
+(un)zoom with no images crasher fixed
+mouse-clicking with no images crasher fixed
+Middle-of-the-stack Add Layer crasher squashed
+Undid extra view row/column fix - caused shrinking view
+Fixed a crasher when shortcut cancelling from CreateWindow
+Undo fundamentals added (currently not called)
+Added background bitmap to make transparency for bottom layer available
+Added APPLY_DIFFERENCE tester for Utils::ApplyBitmap
+
+1.6
+Added BPMImage::NewLayerFromBitmap
+Debugged Utils::Bitmap2Message and Message2Bitmap
+Added Text Tool - almost works perfectly(!)
+
+1.5
+Updating for multiple layers works correctly now
+Converter functionality added to FilterWindow/BPMWindow
+Speedup + fixed bitmap overflow in CreateSpectrum (layerwindow+image+color picker != crash)
+Limited to opening 30 images at a shot
+Fixed a number of zoom-related bugs
+Fixed (hopefully) bugs related to switching images
+Fixed a LayerWindow stack update bug
+Blending modes work properly for brush and layers
+
+1.4
+(hopefully) killed cutoff/extra line in view rect bug
+Changing images now updates color windows
+Added 'd' shortcut for default colors
+Line and Brush alpha are properly updated on app start
+Tool coords work properly in zoomed mode
+Added beginnings of FilterWindow and libImageManip code
+Plugins have own menu, sorted by category
+Display and Window menus have been combined
+SavePanel spits out bitmaps now
+BPMFile saving functions work - no compression yet
+
+1.3
+Export via Translator SaveAs window started
+Eliminated a crash from opening toolwindow with no images
+Added a couple Options views (very basic)
+Added SpLocale multilanguage support
+Added About window
+Tweaked cross cursor to make it visible over dark backgrounds
+Paintbrush/Line use OptionsWindow transparency (normal mode only)
+Transparency modes implemented for PaintBrush
+UpdateDisplayImage now utilizes rectangle passed to it
+
+1.2
+Fixed brush type update bug from BrushView/makebrush
+Toolwindow now has brushview reset if opened with image open
+Toolwindow opens with a tool selected
+Fixed a strange mousemove/paintbrush bug
+Killed a minor paintbrush flicker bug
+Killed a Even Aspect/Lock Aspect selection/clicking problem
+Killed a crasher when clicking on the empty desktop view (no images)
+Mouseups outside PicView are intercepted for paintbrush
+Paintbrush paints in proper color and userbrushes work right
+Colorwindow cursors are reset to current image colors when windows are reopened
+x key now swaps image colors
+New layers are transparent
+Layered redraw works MUCH better - very basic(trans/not) transparency, though
+All currently implemented tools work properly w/ redraw and layers
+
+1.1
+Added code to enable use of Move tool - disabled temporarily due to bugs
+Infrastructure added to support eyedropper tool. Tool not implemented yet
+RGBColorControl picker updated when HSV picker color chosen
+Added usage of Be graphics functions to allow for layer testing & work
+System for loading preferences implemented
+Threading for image updating added
+LayerWindow hiding routines work properly now
+PaintBrush and PaintLine tools implemented - transparency done at a base level
+
+1.0
+Added BPMFile stuff - all that needs added is a SavePanel - save and load both work
+Userbrushes smaller than brush button no longer scaled
+Brush designer works properly
+Newly created images have item checked in Window menu now
+Newly created images update brush view
+BrushView reopens with settings for current image
+
+
+0.9
+Cleaned up some of the BrushSelectorView code
+Added infrastructure for passing around of brush data
+Color windows cause complete updates
+SetPoint works in the set colors & confirms working color infrastructure
+User brushes are now set up
+
+0.8
+Tweaked filepanel so that it isn't hidden by app's child windows
+Added color windows
+
+0.7
+Added brush window - almost works
+BrushWindow uses TSliders
+Added ColorButtons and brush display in toolbar
+Layer Visibility stuff added/fixed
+BrushSelectorView's Lock Aspect now works
+
+0.6
+Removed a Open File crasher
+Added Window shortcuts(tool, layer,etc)
+LayerWindow almost works perfectly
+Can't do layer manipulation w/out an image now
++/- keys are now working zoom shortcuts
+Added TSlider class from Gobe GIMP stuff source
+Fullscreen modes work now
+
+0.5
+Tweaked hotspot in Cross cursor
+Added Zoom features
+SetPixel takes zoom into account
+Added shortcut functionality
+Added active image pointer for access ease
+Rudimentary layer (add/del) manipulation
+Beginnings of LayerWindow
+Alt-W quits if no images open
+
+0.4
+Fixed unusual redraw bug
+Fixed middle-image-stack crasher(?)
+Added scrollbars
+Fixed placement/resize bugs
+Rudimentary cursor support added
+
+0.3
+Added CreateWindow class
+Added BRect centering function
+File|Open implemented
+
+0.2
+More infrastructure + toolbar
+Realtime drawing with brush tool
+PicView is resized to new image sizes
+
+0.1
+Initial code setup - we have a window

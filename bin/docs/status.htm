@@ -1,0 +1,331 @@
+<html>
+<head>
+   <title>BePhotoMagic</title>
+</head>
+<body background="pics/bowtie.jpg" bgcolor="#FFFFFF" text="#000000">
+
+<h2>
+<font color="#FF0000">BePhotoMagic</font></h2>
+<b><font size=-1>Copyright 2000 BePhotoMagic Dev Team</font></b>
+<br>
+<hr WIDTH="100%">"Ho, hum, another useless, buggy Be app under development.
+Wait a minute - this one almost works!"
+<p>BePhotoMagic is the attempt to make one more dangerous app which allows users to avoid rebooting to a certain monopolizing, crappy platform-which-shall-remain-nameless in order to use Photoshop. Some people (like me) are a perhaps more than a little too impatient for Pixel32, GIMP, or Inferno, even though all three are under heavy development and making nice progress. BePhotoMagic tries to take from the best of both Photoshop and the GIMP, combine them with
+(hopefully) a good dose of common sense for the interface. If nothing else, it's been good busy work. ;^)
+<p>The BPM dev team is <b>very</b> interested in hearing your comments, suggestions, and criticism. Only by your feedback can we make changes and add features which the BeOS community wants. E-mail us at <a href="mailto:bpmagic@columbus.rr.com">bpmagic@columbus.rr.com</a>
+<br>
+<table>
+<tr>
+<td><b><font size=+1>Features:</font></b></td>
+</tr>
+
+<tr>
+<td>
+<center><table BORDER >
+<tr VALIGN=TOP>
+<td>0.62a</td>
+
+<td>Numerous bugfixes over 0.61
+<br>Improvements in Undo functionality
+<br>More progress on Mask mode (still doesn't work yet)
+<br>Numerous UI tweaks
+<br>MouseCam
+<br>BPM files are now BZip2 compressed - old files still readable
+<br>Loads of work on the documentation
+<br>Nonworking preview of the Stamp tool 
+<br>Erase mode
+<br>Brush changes undoable
+<br>Nonworking preview of the Mask mode
+<br>Skinnable toolbar buttons
+<br>Realtime image previews
+<br>Improved save-changes notification
+<br>Layer 0 can be transparent now
+</td>
+</tr>
+<tr VALIGN=TOP>
+<td>0.61a</td>
+
+<td>
+<font size=-1>
+Undo works now for tool and filter operations
+<br>Erase mode is partially implemented
+<br>Mask mode shows a preview of things to come (doesn't work yet)
+<br>Child window speedups
+<br>Several small cosmetic bugfixes
+<br>More stable for the Fill tool
+<br>Rudimentary save-changes notification
+<br>LayerWindow has a "triangle" menu button
+<br>FilterWindow preview has rudimentary zoom abilities now (click/alt-click)
+<br>Rectangle/Ellipse tools work better
+</font>
+</td>
+</tr>
+
+<tr VALIGN=TOP>
+<td>0.60a</td>
+<td>
+<font size=-1>
+Near-complete internal code rewrite
+<br>New preferences system
+<br>Many old, cantankerous bugs squashed
+<br>Paintbrush now draws in real time
+<br>Flood Fill tool - slow and flaky, but usable
+<br>ImageManip plugins now work and have previews
+<br>Multilanguage support through SpLocale
+<br>Native multilayer project support
+<br>Layer and tool blending modes support
+<br>Tool Options for a few tools
+<br>Easier-to-use plugins menu layout
+<br>Many new layer functions, such as Flatten Image
+<br>Much improved file I/O functions
+<br>Lots of 0.54a features missing, like Mask mode and Undo :^(
+</font>
+</td>
+</tr>
+
+<tr VALIGN=TOP>
+<td>0.54a</td>
+<td>
+<font size=-1>
+Flood Fill tool - slow, but usable
+<br>ImageManip plugins are now useful
+<br>Popup help for a lot of different things
+<br>Took out Selected Shape tools - drawing tools can modify the selection
+directly in Mask mode
+<br>Various GIMP brushes have been added to brushes directory
+<br>Crop works
+<br>Value labels to brush designer
+<br>Save-changes prompting now works
+<br>Added Pick Brush from Image tool
+<br>Flip Vertical
+<br>Copy/Paste
+<br>Clipboard Purge
+</font>
+</td>
+</tr>
+
+<tr VALIGN=TOP>
+<td>0.53a</td>
+<td>
+<font size=-1>
+Shape tools now use customizable brushes
+<br>Designed brushes much cleaner when used
+<br>Rectangular/square brushes now available
+<br>Text tool is now partially implemented
+<br>Internal logging system
+<br>Color Picker works better
+<br>Improved file I/O stability
+<br>Many miscellaneous cleanups
+</font>
+</td>
+</tr>
+
+<tr VALIGN=TOP>
+<td>0.52 a</td>
+<td>
+<font size=-1>
+Easily customizable brushes, including sprite brushes.
+<br>Easy-to-create plugins - libimagemanip SDK
+<br>Working plugin interface
+<br>Keyboard shortcuts
+<br>Rudimentary shape tools
+</font>
+</td>
+</tr>
+</table></center>
+</td>
+</tr>
+</table>
+
+<br>
+<table BORDER=1>
+<tr VALIGN=TOP>
+<td><b>Features to come:</b></td>
+<td>
+Open file from URL
+<br>Print capability and limited page layout options
+<br>Allow usage of filters on the selection
+<br>Clipboard operations - Copy, Paste, Cut, Paste Into, Paste Behind
+<br>Application scripting
+<br>Spline Tool
+<br>Brush presets
+<br>Resize Canvas, Resize Image, Crop
+<br>Layer commands - Merge, New from Selection, Open as Layer, etc.
+<br>Make/port some new plugins
+<br>Gradients
+<br>Blur/Sharpen
+</td>
+</tr>
+</table>
+
+<br>
+<table>
+<tr>
+<td><b><font size=+1>Known Issues:</font></b></td>
+</tr>
+
+<tr>
+<td>
+<table BORDER >
+<tr>
+<td>Bezier</td>
+
+<td>Unimplemented</td>
+</tr>
+
+<tr>
+<td>Bucket</td>
+
+<td>Relatively fast, but due to the nature of the Undo code internals, lots of fills on a large image will chew through RAM faster than a hot knife through warm butter. Thus, it has the capacity to crash BeOS</td>
+</tr>
+
+<td>Stamp</td>
+
+<td>Disabled - code needs serious cleanup
+</td>
+</tr>
+
+<tr>
+<td>Move</td>
+
+<td>Unimplemented</td>
+</tr>
+
+<tr>
+<td>Erase</td>
+
+<td>AFAIK, it works as it should except for the filled tools. Notify the team if you run into problems.</td>
+</tr>
+
+<tr>
+<td>Filters</td>
+
+<td>Carpet filter is *very* crash-prone - internal to the plugin itself.
+<br>Qbist filter has been known to crash app once in a while
+<br>Emboss filter will crash the app if you try to open a nonexistent file as a bump map
+</td>
+</tr>
+
+<tr>
+<td>UI</td>
+
+<td>Toolbar shortcuts will sometimes change the tool without the appropriate toolbar button being "turned on." This is caused by a kludge which will be fixed in a future release.
+</td>
+</tr>
+
+<tr>
+<td>File I/O</td>
+
+<td>The gimp PAT translator will crash whatever app using it when opening
+certain PAT files</td>
+</tr>
+
+<tr>
+<td>Filled Shapes</td>
+
+<td>Don't use non-normal blending modes properly</td>
+</tr>
+
+<tr>
+<td>Other</td>
+
+<td>Merge Down works better than before, but still not quite right</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+
+<table>
+<tr>
+<td><b><font size=+1>Bugfixes:</font></b></td>
+</tr>
+
+<tr>
+<td>
+<table BORDER >
+<tr VALIGN=TOP>
+<td>0.62a</td>
+
+<td>
+Retooled & cleaned up fullscreen code
+<br>Divide blend mode bug removed
+<br>Redraw works *much* better
+<br>Triangle menu works now
+<br>Layer Opacity slider is now updated
+<br>Filled Ellipse is undone in one keypress
+<br>Progress on the function ApplyBitmap(), which numerous functions hinge on, such as Merge Down/Visible, proper blending mode use on the Filled tools, etc.
+</td>
+</tr>
+
+<tr VALIGN=TOP>
+<td>0.61a</td>
+
+<td>Fill tool uses BLists now - previously there was a possibility of running
+out of memory
+<br>Changing layers updates blendmode button in LayerWindow
+<br>Text, Erase, and Mask buttons are now in sync with rest of app</td>
+</tr>
+
+<tr>
+<td>0.60a</td>
+
+<td>Near complete rewrite</td>
+</tr>
+
+<tr VALIGN=TOP>
+<td>0.54a</td>
+
+<td>Opening OptionWindow no longer sets transparency to 0%
+<br>Tweaked BubbleHelper to reflect actual shortcut key case
+<br>Redraw at zoomed levels works much better now
+<br>Resizing color picker doesn't also pick a color
+<br>Undoing selection changes no longer causes a crash
+<br>No more complaints about missing preferences
+<br>Couple of minor brush designer label bugs squashed
+<br>Ellipse tool now draws properly when dragged along any diagonal vector
+<br>Pick Brush from image enabled
+<br>A missing brushes directory no longer hangs the app
+<br>Some internal reorganization
+<br>Brush designer now remembers brush settings every time it's opened
+<br>Layer Window crasher has been temporarily hacked into submission
+<br>Line/Rect/Ellipse previews reflect size of brush
+<br>Can now undo the first edit to an image
+<br>Horizontal Flip pretty much works now
+<br>Create Window no longer requires you to tab out of a number box before
+hitting OK
+<br>Fixed display bugs in Select All/Select None</td>
+</tr>
+
+<tr VALIGN=TOP>
+<td>0.53a</td>
+
+<td>Improvements in paintbrush workings
+<br>Better menu organization
+<br>Rectangle is finished
+<br>Ellipse works better
+<br>Selection tools leave no graphical artifacts</td>
+</tr>
+
+<tr VALIGN=TOP>
+<td>0.52a</td>
+
+<td>Opening and saving files no longer crashes
+<br>Color selector doesn't reset your colors upon re-open
+<br>Rectangle tool actually works
+<br>Select Range does not crash the app</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</font>
+<p><b>Nice stuff to know which has little effect on actually using it:</b>
+<br>Small download for a big app - less than 1MB (with source!)
+<br>Free to distribute and modify under GPL
+<br>Built for BeOS from the ground up
+<br>Your input influences development
+<br>This is my first real app - ever
+<br>Conscientious tech support from the team
+</body>
+</html>

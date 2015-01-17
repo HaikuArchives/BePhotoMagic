@@ -1,6 +1,3 @@
-#include "Utils.h"
-#include "PrefData.h"
-
 /*
  *  ProgressiveBitmapStream.h
  *

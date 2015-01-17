@@ -1,0 +1,106 @@
+<html>
+<head>
+   <title>BPM User's Manual: How to do Stuff</title>
+</head>
+<body bgcolor="#FFFFFF" text="#000000" link="#B88230" vlink="#B88230" alink="#B88230">
+
+<center><img SRC="pics/bpmtitle.jpg" >
+<p><b><font color="#990000"><font size=+1>How to do Stuff</font></font></b></center>
+
+<p><b><font color="#990000"><font size=+1>How do I...</font></font></b>
+<b>
+<p><a href="#texttool">Use the Text Tool</a>
+<br><a href="#readfiles">Get other image apps to read my files</a>
+<br><a href="#fileformats">Figure out which file format to use</a>
+<br><a href="#masks">Use Selections/Masks</a>
+<br><a href="#keeplayers">Keep my layers</a>
+<br><a href="#erase">Erase</a>
+<br><a href="#usefilter">Use a filter</a>
+<br><a href="#pickcolor">Pick a color</a>
+<br><a href="#pickbrush">Pick a brush</a>
+<br><a href="#installbrush">Install/Make my own brushes</a>
+<br><a href="#nonenglish">Use a language other than English</a>
+<br><a href="#translate">Translate to my native language</a>
+<br><a href="#crop">Cut off part of an image</a>
+<br><a href="#resizeimage">Make the image a different size</a>
+<br><a href="#burndodge">Burn/Dodge parts of an image</a>
+</b>
+<p><b><font color="#990000"><font size=+1>What is a &lt;fill in the blank>/What
+does &lt;fill in the blank> do?</font></font></b>
+<b><font color="#B88230">
+<p><a href="#blendingmodes">Blending modes</a>
+<br><a href="#erasericon">Eraser icon</a>
+<br><a href="#dofilters">Filters</a>
+<br><a href="#domask">Mask</a>
+</font></b>
+<p>
+<hr WIDTH="100%">
+<br><b><font color="#990000"><font size=+1>How do I...</font></font></b>
+<p><a name="texttool"></a><font color="#B88230"><b>Use the Text Tool</b></font>
+<br>The Text Tool is different from perhaps any other tool you've used. Bring up the window by clicking on the 'T' button or pressing the T key.
+<p>Left Side: Controls
+<br>Shear affects how slanted the text is. Double-clicking a font from the list will choose that particular font for you. Below the list of all the fonts are the available styles. Double-clicking a style will make that style the current one. The other sliders should be self-explanatory. Should you wish to keep the Text Tool window open, but get it out of the way, click the Toggle Display button. Clicking the Create button will turn the text into a brush, allowing you to place it wherever you like, make a selection out of it, erase with it, etc.
+<p>Right Side: Text Display
+<br>The text is displayed in the What-You-See-Is-What-You-Get (WYSIWYG) style, i.e. the text will appear on the image <i>exactly</i> as you have created it. In this section, you can use the left mouse button to click and drag the text around. This is particularly nice if the text is larger than the view is. Clicking the right mouse button will move the text display to that point - good for those instances where the text display
+has disappeared off the edge of the view.
+<p><a name="readfiles"></a><b><font color="#B88230">Get other image apps to read my files</font></b>
+<br>BePhotoMagic uses its own file format to keep an image's layers separate. BeOS' translators do not do this. Under File, choose Save As|Via Translator or hit Command-Shift-X. This will bring up a Save As window to save your file into whichever file format you choose. Your file will only have one layer and can be read by any program which uses the BeOS' translators. Eventually, there may be a BeOS translator for your project files, too.
+<p><a name="fileformats"></a><b><font color="#B88230">Figure out which file format to use</font></b>
+<br>Images with lots of colors probably should use JPEG unless you want to make sure that image quality will not degrade. If you want to use it for a Web page, you will want to save as a PNG. If this is for some other use, TIFF and TGA work nicely, too.
+<br>There is a certain issue with the PNG translator where it creates an unneeded transparency channel, and, thus, the image is larger than it should be. This will also cause the image to appear blank when opened under BePhotoMagic. This will be resolved in a future release, but, for the moment, use a program like PNGcrush or open it in ArtPaint and save it as another kind of file.
+<p><a name="masks"></a><b><font color="#B88230">Use Selections/Masks</font></b>
+<br>The Mask button sets the program into Mask mode. In Mask mode, any parts of the picture which are colored will be less (or not) affected when you paint, use a plugin, etc. and you can change the selection simply by using the regular tools while in Mask mode. Another way is the Magic Wand tool, which is actually used from regular mode, but affects the mask. <i>While not currently implemented under any version, the Magic Wand will be as soon as most of the kinks are worked out of the Fill tool.</i>
+<i>Masks
+are unimplemented under 0.61, but work just fine under 0.54</i>
+<p><a name="keeplayers"></a><b><font color="#B88230">Keep my layers</font></b>
+<br>Just Save your file like you normally would (i.e. File|Save or File|Save As) and you will save your work as a BePhotoMagic file and keep everything just as you left it.
+<p><a name="erase"></a><b><font color="#B88230">Erase</font></b>
+<br>Erasing (to transparent) in BePhotoMagic is a relatively easy task. Click the Eraser icon in the toolbar to turn Erase mode on. From there use any tool except the Fill tool to erase. If you want to use the Fill tool for this, use the Magic Wand tool and hit Edit|Cut.
+<p><a name="usefilter"></a><b><font color="#B88230">Use a filter</font></b>
+<br>Go under the Plugins menu and pick one. If that particular filter won't work on your image, for some odd reason, you will be informed of this. The filter will work only on the selected part of the image. You will be able to get a preview of the image with any filter simply by clicking the Preview button, assuming that the filter doesn't already have a preview checkbox. Checking the preview checkbox will make realtime (sort-of) previews. To zoom in, click the '+' button. To zoom out, click the '-' button. <i>In a future release, you will also be able to move around the image preview using the mouse to drag the preview around.</i>
+<p><a name="pickcolor"></a><b><font color="#B88230">Pick a color</font></b>
+<br>Click on one of the two colored boxes in the Toolbar and a color picker window will pop up. You can either pick using the Red-Green-Blue method of putting together colors, or the Hue-Saturation-Value method.
+With either method, you can pick a specfic number or just click to pick. Also, you can choose a color from the image using the Eyedropper tool
+<p>Hue - the kind of color (red, bluish-green, etc)
+<br>Saturation - how intense the color is, like how clothing dye gradually fades. Saturation=0 is gray.
+<br>Value - the lightness or darkness of the color i.e. how bright it is.
+<p><a name="pickbrush"></a><b><font color="#B88230">Pick a brush</font></b>
+<br>You can pick a square or round brush by (un)checking Rectangle. Use the sliders to pick a size. The Even Aspect checkbox ensures that you will have a perfect circle or square for a brush. Lock Proportions,
+when checked, will keep the same height/width proportions when the brush size changes. You can also pick a user brush by clicking on the User Brushes tab and clicking on a brush image. Eventually, you will also be able to save settings for commonly-used brushes. <i>0.54 also allows you to choose a brush from the image by choosing the menu item Pick Brush</i>
+<p><a name="installbrush"></a><b><font color="#B88230">Make/Install my own brushes</font></b>
+<br>BePhotoMagic can use almost any picture as a brush. Although it is possible to use large pictures (say, 640x480 pixels) for a brush, it is not recommended. Edit|Pick Brush from Image lets you create a brush from the current image by selecting a portion of the image.
+<br>Also, any picture file which has a translator can also be used simply by placing them in the brushes folder wherever you have BePhotoMagic installed. Take note, however, that any color image will be converted to grayscale (i.e. black-and-white) before it is made into a brush. This will <b>not</b> affect the file itself- only how BePhotoMagic uses it as a brush. Currently, BePhotoMagic is limited to 255 user-defined brushes.
+<p><a name="nonenglish"></a><b><font color="#B88230">Use a language other than English</font></b>
+<br>Beginning with 0.60, BePhotoMagic uses SpLocale, which is readily available on <a href="http://www.bebits.com/app/1869/">BeBits</a>, amongst other places. Install it and fire up LocalePrefs. From there, select from the drop-down box BePhotoMagic and click on whatever language you wish from the menu on the right. Whichever language at the top of the Preferred Languages list will be the primary language BePhotoMagic will use. Hit Apply and any time you use BePhotoMagic, it will use that language. SpLocale use
+is still rather new to the BePhotoMagic team, so this may require some playing around.
+<p><a name="translate"></a><b><font color="#B88230">Translate to my native language</font></b>
+<br>It's a bit more complicated than before and takes more space than this quick help can supply readily, but e-mail me at <a href="mailto:bpmagic@home.columbus.rr.com"><font color="#000088">bpmagic@home.columbus.rr.com</font></a> and I'd be glad to explain. It's not hard - it just takes some explanation.
+<p><a name="crop"></a><b><font color="#B88230">Cut off part of an image</font></b>
+<br>Select the part of the image you wish to keep and choose Image|Crop. If you have multiple selections in the mask, it will crop the smallest rectangle which will encompass all of the selections. This will not destroy the original image. Instead, it will create a new image with the cropped size. <i>Currently in use only under 0.54</i>
+<p><a name="resizeimage"></a><b><font color="#B88230">Make the image a different size</font></b>
+<br>Choose Image|Resize and pick a new size. This will not destroy the original image. Instead, it will create a new image with the new size. <i>Currently in use only under 0.54</i>
+<p><a name="burndodge"></a><b><font color="#B88230">Burn/Dodge part of the image</font></b>
+<br>BePhotoMagic has no need for a Burn or Dodge tool. Why? The Multiply and Divide blending modes should provide more than adequate functionality for such things. How? Divide mode dodges colors, and Multiply burns them. In fact, choosing a non-grayscale color can also tint what you're tweaking, too. :^) GIMP users should be relatively familiar with this kind of thing. <br><i>Not implemented under 0.54</i>
+<p>
+<hr WIDTH="100%">
+<p><b><font color="#990000"><font size=+1>What is a &lt;fill in the blank>/What
+does &lt;fill in the blank> do?</font></font></b>
+<p><a name="blendingmodes"></a><b><font color="#B88230">Blending modes</font></b>
+<br>Blending modes combine the brush color with whatever color is under it in the image and affect how layers are combined. 
+<p><b>Normal</b>: Regular run-of-the-mill transparency. WYSIWYG color mode.
+<br><b>Multiply</b>: Makes colors darker. Black yields nothing but black and white is transparent.
+<br><b>Divide</b>: Makes colors lighter. Black yields nothing but <i>white</i> and white is transparent.
+<br><b>Difference</b>: Subtracts the foreground color from the background color. Black is transparent. White inverts the color.
+<br><b>Exclusion</b>: Flips the color bits in the background based on the foreground values. Tends to create values similar, but not exactly like, Difference
+<br><b>OR</b>: The resulting color is a bitwise OR of the foreground and background colors, resulting in lighter colors if the colors are different. White yields nothing but white and black is transparent. For example, 25(00011001) OR 128(10000000) yields 153(10011001). If this sounds confusing, just play with it for a bit and you'll understand better. This mode is completely unheard of in GIMP and Photoshop, so I'd be glad to hear what it's useful for. It sounded interesting, so I threw it in. :^)
+<br><b>Addition</b>: Adds the foreground color to the background and makes sure it is no greater than 255. Black is transparent and white yields nothing but white.
+<br><b>Subtraction</b>: Like Difference, it subtracts the foreground color from the background color, BUT all negative values are set to 0.
+<p><a name="erasericon"></a><b><font color="#B88230">Eraser icon</font></b>
+<br>BePhotoMagic allows you to use almost any tool can be used to erase in the image. "Standard" tools like the brush can be used, but so can the Line tool, for example. When the Eraser icon is highlighted, the tool's
+Opacity determines how much is erased (i.e. 255=complete erasure, 128=erase 50%). How much is actually erased is a percentage - 128 -> 50%, 64->25%, etc.
+<p><a name="dofilters"></a><b><font color="#B88230">Filters</font></b>
+<br>Filters change the way the image looks. BePhotoMagic uses the ImageManip filters also distributed with Gobe Productive, so if you're used to Productive, you will find extras to help you work more quickly. You can use any kind of selection with any filter - not just a rectangle. How? BePhotoMagic interacts with ImageManip filters in such a way that selections are not an issue. Even if a filter cannot handle non-rectangular selections in another app, such is not the case here. <I>Selections are currently unimplemented under 0.61</i>
+<p><a name="domask"></a><b><font color="#B88230">Mask</font></b>
+<br>A mask is a fundamental image processing tool which allows you to select a part or parts of an image in order to limit whatever you're doing to just the parts you want. It also is quite useful in preventing mistakes while you're tweaking that little section of the image that just isn't quite right or just making a filter work on just part of the image.
+</body>
+</html>

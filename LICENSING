@@ -1,0 +1,16 @@
+BePhotoMagic, beginning with 0.62 has licensing changes: 
+
+The code in the following files is distributed under the GNU Public License and may be distributed under the conditions contained in it:
+
+AboutWindow.cpp/.h
+BPMMainF.cpp/.h
+CreateWindow.cpp/.h
+SavePanel.cpp/.h
+TSlider.cpp/.h
+
+The code in MouseCam.cpp/.h is distributed under the Be Inc. Source Code License and may be distributed under the conditions contained in it.
+
+All other code (written by me and not obtained from any other source) is now public domain. You may do with it whatever you wish. If used, a word of credit is appreciated, but not required.
+
+--Warren Piece
+BePhotoMagic author

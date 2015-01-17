@@ -1,0 +1,71 @@
+-------------BUGPROOFING-------------------
+Occasional crash on closing of image at UndoData deletion loop
+
+Fill tool is memory hungry
+
+On large images, have to hold down button long time before brush spot appears - suspect to be related to time it takes to add the update thread.
+
+BPMView not always placed properly when zoomed out. (another #$&*ing zoom bug...)
+
+--------NEED TO DO------------------------
+Go to areas-based undo system. Ugh.
+
+Apply Bitmap doesn't work right - ex Merge Down
+
+Investigate using BWindow::AddShortcut for toolbar shortcuts
+
+Add Layer functionality operations to Undo
+
+BPMView::UpdateOptionsWindow doesn't work, but apparently isn't that necessary. Remove UpdateOptionsWindow and redo tool alpha settings code
+
+Keep the UpdaterThread around all the time while the app is running, but not always updating
+
+Change previews for Line/Rect/Ellipse to draw using B_OP_INVERT instead of the color
+
+Go from the kludgey BPMApplication::ShortcutToolbarUpdate to a better solution
+
+Make a BAlert subclass to allow for keyboard shortcuts
+
+Copy and PasteAsNew don't work
+
+Need to go to single document interface for memory requirements problems
+
+BPMPrefs needs to be revised to make more bulletproof
+
+Need to make rect optionsview work properly - currently unused
+
+Moving a layer up/down needs to keep the same layer active
+
+User brush window does not place brushes properly - needs a little bit tweaked
+
+Remove redundant tool-based code in ToolWindow - less bulk
+
+Gradient code needs serious work
+
+Stamp tool causes crashes
+
+Ought to use the SelRect and SelEllipse tools
+
+MouseCam needs to display an indelible hotspot over where the mouse's hotspot is
+
+Need intermediary pre-flattened layer to speed up updates with lots of layers
+
+Fill tool needs a bit of a speed-up
+
+--------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------FILTERS----------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------
+Emboss will crash if you use a non-existent image for the bump map
+Illusion, Carpet, Solarize, Difference Plasma, Edge, and Pixelize need to use TSliders
+
+--------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------LATER----------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------
+*REALLY* big picture sizes crash BeOS	--> need to go to a tile-based system
+
+Cursors sometimes don't change with tool
+
+Extra row/column problem in displaying image appears to be harmless
+
+Need to fix code bloat in OptionsView with some common classes
+

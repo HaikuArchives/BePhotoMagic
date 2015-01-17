@@ -1,141 +1,135 @@
 
-#ifndef NAT_VIEW_H
-#define NAT_VIEW_H
+#ifndef BPM_VIEW_H
 
-#include "share.h"
-#include "ProgressWin.h"
+#define BPM_VIEW_H
 
-#define PAINT_RECT 'ptrt'
-class Painting 
-{
-public:
-	Painting(share *sh);
-	share *shared;
+#include <Application.h>
+#include <Message.h>
+#include <Window.h>
+#include <View.h>
+#include <TranslationUtils.h>
+#include <string.h>
 
-//long _PasteLine(void *arg);
-//thread_id painting_thread;
+#include "BPMImage.h"
+#include "LayerWindowMsgs.h"
+#include "AppCursor.h"
+#include "Utils.h"
 
+// More redefined definitions from OptionWindow
+#ifndef ALTER_OPTION_DATA
+	#define ALTER_OPTIONWIN_DATA 'aowd'
+#endif
 
-void PasteBrush(BPoint le_point);
-void PasteLine(BPoint start, BPoint end);
-//void PasteEllipse(BPoint center, int32 Rx, int32 Ry);
-void PasteEllipse(BRect frame);
+// Stolen from FilterWindow
+#ifndef FILTERED_BITMAP
+	#define FILTERED_BITMAP 'fbmp'
+#endif
 
-BPoint brush_pos[2048];
-BPoint last_pasted;
+#ifndef TOOL_BRUSH
+// Stolen from ToolWindow message defs
+#define TOOL_BRUSH	'tbsh'
+#define TOOL_FILL	'tfil'
+#define TOOL_LINE	'tlin'
+#define TOOL_SPLINE	'tspl'
+#define TOOL_RECT	'trct'
+#define TOOL_ELLIPSE	'tell'
+#define TOOL_TEXT	'ttxt'
+#define TOOL_ZOOM	'tzom'
+#define TOOL_EYEDROPPER	'teye'
+#define TOOL_STAMP	'tstm'
+#define TOOL_WAND	'twnd'
+#define TOOL_FRECT	'tfrc'
+#define TOOL_FELLIPSE	'tfel'
+#define TOOL_MASK	'tmsk'
+#define TOOL_MOVE	'tmov'
+#define TOOL_ERASER	'ters'
+#define TOOL_GRADIENT 'tgrd'
 
-uint32 offset, offset_st;
-uint8 tmp;
-uint16 pos_x, pos_y;
-uint8 transp,mask_transp;
-uint8 mask_col;
-float brush_val;
-uint8 *l_bits,*l_paper,*l_bits_st,*l_wbits,*l_brush_bits,*l_mask_ptr,*l_ori_ptr,*l_wori_ptr,*l_ori_ptr_st;
-uint16 line_length, line_length_24;
+#define SCREEN_FULL_NONE	'sfnn'
+#define SCREEN_FULL_HALF	'sfhf'
+#define SCREEN_FULL_ALL		'sfal'
 
-int16 to_cut_left, to_cut_right, to_cut_top, to_cut_bottom;
+#define GRADIENT_LINEAR 0
+#define GRADIENT_RADIAL 1
+#define GRADIENT_RECTANGULAR 2
 
-};
+#endif
 
+// View-specific message defines
+#define CENTER_VIEW 'cnvw'
+
+#ifndef SHOW_WAIT
+	#define SHOW_WAIT 'shww'
+	#define CLOSE_WAIT 'hdww'
+#endif
 
 class PicView : public BView 
 {
 public:
-	share *shared;
+	PicView(BRect r, long flags);
+	void AttachedToWindow(void);
+	virtual	~PicView();
 
-BView *virtualView;
-PicView(BRect r,share *sh, long flags);
-virtual	~PicView();
+	// UI functions
+	virtual void MouseDown(BPoint where);
+	virtual void MouseUp(BPoint where);
+	virtual void MouseMoved(BPoint where, uint32 transit, const BMessage *dragdrop);
+	virtual void Draw(BRect update_rect);
+	virtual void Draw(void);
+	virtual void MessageReceived(BMessage *msg);
 
-//for drawing circular brush pointer
-BPoint old_pos_moved;
-uint16 old_x_size,old_y_size;
-
-BPoint last_picked;
-
-BPoint last_updated;
-uint8 was_circle;
-virtual void MouseDown(BPoint pt);
-virtual void MouseUp(BPoint pt);
-virtual void MouseMoved(BPoint where, uint32 transit, const BMessage* dragDropMsg);
-virtual void Draw(BRect);
-
-unsigned char show_progress;
+	// Data-related functions
+	bool CreateNewImage(const char *namestr, uint16 imgwidth, uint16 imgheight);
+	bool CreateNewImageFromBitmap(const char *namestr,BBitmap *bmp);
+	bool CloseActiveImage(void);
+	void UpdateLayerWindow(void);
+	void UpdateOptionWindow(void);
+	void ClipboardCopy(void);
+	void ClipboardPaste(void);
+	void ClipboardCut(void);
+	void ClipboardPasteAsNew(void);
+	void RadialGradient(BPoint startpt,BPoint endpt);
+	void RectGradient(BPoint startpt,BPoint endpt);
 	
-virtual void MessageReceived(BMessage *msg);
-virtual void Pulse();
-
-
-//TOOLS
-void WithBucket(BPoint point,uint8 is_wand);
-
-//IMAGE EDIT
-void ResizeCanvas(int16 bor_left, int16 bor_top, int16 bor_right, int16 bot_bottom);
-void  CropSelected();
-
-void  Filter_Invert();
-//void Filter_SlideHSV();
-void Filter_Rotate180();
-void Filter_FlipHori();
-//void Filter_LimitLevels(uint8 levels);
-
-void  InvertSelection(); 
-
-void UpdateDisplay(BPoint point);
-void FloodFill(BPoint pt);
-uint8 TestVal(BPoint pt);
-
-
-uint8 ZoneOK(BPoint pt);
-void BeforeDraw();
-
-void PrepareForUndo();
-BRect modif_plus_brush;  
-BRect modified;
-BRect real_time_modified;
-
-BRect to_draw;
-BRect zone_to_update;
-uint8 has_scrolled;
-BRect mov_rect;
-BPoint delta;
-BPoint t;
-
-uint8 pasted_once;
-rgb_color fill_ori_color;
-rgb_color fill_color;
-
-uint8 updated_after_fill;
-uint8 fill_done;
-
-void PrepareFilter();
-void FilteringDone();
-void CopyUnfiltered();
-void EndProgress();
-void InitProgress();
-
-
-BRect selected_zone;
-
-Layer **draw_img_ptr;
-status_t _PasteLine(void *arg);
-
-Painting *painting;
-
-//void smooth_line(BPoint start, BPoint end);
-void DrawGuides();
-
-rgb_color stamp_color; 
-
-bool filtering;
-uint32 percent_val;
-uint32 percent_ctr;
-void UpdateProgress(uint32 bytes_updated);
-uint32 ln_count;
-uint32 ln_width;
-float percent;	
+	// Tool functions
+	void SetZoom(bool mode);
+	static int32 ThreadUpdater(void *data);
+	
+	 // exists only for a while...
+//	void ApplyBeGraphics(BPoint oldpt, BPoint newpt, bool fore=true);
+	
+	// Data
+	BPMImage *images[255];
+	uint8 active_image;
+	BPMImage *p_active_image;
+	
+	int32 updaterID,
+		stamp_xoffset,stamp_yoffset,
+		currenttool,previoustool;
+	BRect stamp_rect;
+	uint8 openimages;
+	BPoint old_mouse_pos,new_mouse_pos;
+	BRect old_preview_frame,extents;
+//	float zoom;
+	
+	bool mousedown;
+	bool foremode;
+	bool zoomin;
+	uint8 tool_blendmode;
+	uint8 tool_alpha;
+	uint8 gradientmode;
+	BBitmap *backbitmap;
 };
 
-
-
+class DesktopView : public BView
+{
+public:
+	DesktopView(BRect rect, PicView *child);
+	~DesktopView(void);
+	void AttachedToWindow(void);
+	void MouseUp(BPoint where);
+	void MouseDown(BPoint where);
+	
+	PicView *childview;
+};
 #endif

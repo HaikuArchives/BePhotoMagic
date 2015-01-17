@@ -1,97 +1,94 @@
-#ifndef TOOL_WINDOW_H
-#define TOOL_WINDOW_H
+#ifndef _TOOLWIN_H_
+#define _TOOLWIN_H_
 
-#include "share.h"
-#include "ColWindow.h"
+#include <Looper.h>
+#include <Application.h>
+#include <Window.h>
+#include <View.h>
+#include <Bitmap.h>
+#include <Path.h>
+#include <String.h>
+#include <TranslationUtils.h>
+#include <stdio.h>
 
-#define SET_FULL_NONE 'sfnn'
-#define SET_FULL_HALF 'sfhf'
-#define SET_FULL_TOTAL 'sftt'
-#define SET_TO_COLOR 'stcl'
+#include "DrawButton.h"
+#include "ToolbarView.h"
+#include "Utils.h"
+#include "SpLocaleApp.h"
 
-class ForeView : public BView 
-{
-public:
-	share *shared;
-ForeView(BRect r,share *sh);
-virtual void MouseDown(BPoint pt);
-virtual void MouseUp(BPoint pt);
-virtual void MouseMoved(BPoint where, uint32 transit, const BMessage* dragDropMsg);
-virtual void MessageReceived(BMessage *ms);
+//#ifndef TOOL_BRUSH
+#define TOGGLE_TOOL_WINDOW 'tgtw'
+#define TOOLWIN_CLOSED 'tlwc'
+#define TOGGLE_BACKCOLOR 'tgbc'
+#define TOGGLE_FORECOLOR 'tgfc'
+#define TOGGLE_BRUSH_WINDOW 'tgbw'
 
-BPoint old_pos;
-bool dragging;
-bool pressed;
-};
+#define TOOL_BRUSH	'tbsh'
+#define TOOL_FILL	'tfil'
+#define TOOL_LINE	'tlin'
+#define TOOL_SPLINE	'tspl'
+#define TOOL_RECT	'trct'
+#define TOOL_ELLIPSE	'tell'
+#define TOOL_TEXT	'ttxt'
+#define TOOL_ZOOM	'tzom'
+#define TOOL_EYEDROPPER	'teye'
+#define TOOL_STAMP	'tstm'
+#define TOOL_WAND	'twnd'
+#define TOOL_FRECT	'tfrc'
+#define TOOL_FELLIPSE	'tfel'
+#define TOOL_MASK	'tmsk'
+#define TOOL_MOVE	'tmov'
+#define TOOL_ERASER	'ters'
+#define TOOL_GRADIENT 'tgrd'
 
-class BackView : public BView 
-{
-public:
-	share *shared;
-BackView(BRect r,share *sh);
-virtual void MouseDown(BPoint pt);
-virtual void MouseUp(BPoint pt);
-virtual void MouseMoved(BPoint where, uint32 transit, const BMessage* dragDropMsg);
-virtual void MessageReceived(BMessage *ms);
+#define SCREEN_FULL_NONE	'sfnn'
+#define SCREEN_FULL_HALF	'sfhf'
+#define SCREEN_FULL_ALL		'sfal'
 
-BPoint old_pos;
-bool dragging;
-bool pressed;
-};
+#define GRADIENT_LINEAR 0
+#define GRADIENT_RADIAL 1
+#define GRADIENT_RECTANGULAR 2
 
-class BrushView : public BView 
-{
-public:
-	share *shared;
-BrushView(BRect r,share *sh);
-virtual void MouseDown(BPoint pt);
-virtual void Draw(BRect);
-};
+//#endif
 
-class PaperView : public BView 
-{
-public:
-share *shared;
-PaperView(BRect r,share *sh);
-virtual void MouseDown(BPoint pt);
-virtual void Draw(BRect);
-BScrollView *parent_scroller;
-};
+// "Borrowed" from BrushView.h
+#ifndef BRUSH_TYPE_ELLIPSE
+	#define BRUSH_TYPE_ELLIPSE	0
+	#define BRUSH_TYPE_RECT		1
+#endif
 
-
+#ifndef TEXTWIN_CLOSED
+	#define TEXTWIN_CLOSED 'txwc'
+#endif
 
 class ToolWindow : public BWindow 
 {
 public:
-
-	share *shared;
-	
-	ToolWindow(BRect frame,const char *name, share *sh); 
+	ToolWindow(BRect frame,bool ismaskmode);
 	~ToolWindow();
+//	bool QuitRequested();
 
-	ColWindow		*foreWindow;
-	ColWindow		*backWindow;
-	
-	BBitmap* downBitmap;
-	BBitmap* upBitmap;
-	char name[2048];
-	char temp_name[2048];
-   	BPicture *on,*off;
- 	void CreateButton(char [255], char nm2[255]);
 	void MessageReceived(BMessage *msg);
-	void DeselectAll();
+	virtual void FrameMoved(BPoint origin);
+
+	BView *toolview;
+	ToolbarView *toolbara,*toolbarb,*toolbarc,*fullscreen;
 	
-	virtual void FrameMoved(BPoint screenPoint);
-	//--------------------
-	BPictureButton *button_01,*button_02,*button_03,*button_04,*button_05,*button_06,*button_07,*button_08;
-	BPictureButton *button_b_01,*button_b_02,*button_b_03,*button_b_04,*button_b_05,*button_b_06,*button_b_07,*button_b_08;
-	BPictureButton *full_none, *full_half, *full_total;
+	DrawButton *forebutton,*backbutton;
+	DrawButton *brushview;
+	BBitmap *brushbitmap;
 	
-	ForeView *fore_view;
-	BackView *back_view;
-	PaperView *paper_view;
-	BrushView *brush_view;
+	rgb_color GetColor(bool fore=true);
+	void SetColor(rgb_color color, bool fore=true);
+	bool LoadButton(ToolbarView *toolbar,const char *name, const char *onname,
+		const char *offname, BMessage *msg);
+	void SelectTool(int32 tool,bool value);
+	
+	bool maskmode;
+	int32 currenttool;
+   	BPath *icondir;
 };
 
+extern BWindow *bpmwindow;
 
 #endif

@@ -1,96 +1,408 @@
 #include "LayerWindow.h"
-#include <PopUpMenu.h>
 
-AllLayersView::AllLayersView(BRect r, share *sh) : 
-	BView(r, "all_layer_view", B_FOLLOW_ALL, B_WILL_DRAW)
-{
-shared = sh;
-SetViewColor(216,216,216);
-}
-
-
-PaintModeView::PaintModeView(const char *name, BRect r, share *sh, BView* the_p) : 
-	BView(r, name, B_FOLLOW_TOP | B_FOLLOW_LEFT, B_WILL_DRAW)
-{
-
-shared = sh;
-SetViewColor(216,216,216);
-
-the_parent = the_p;
-BRect rect(0,0,15,15);
 /*
-char file_name[NAME_SIZE];
-char temp_name[NAME_SIZE];
+	This code is a mess.
 
-sprintf(file_name,util.dossier_app);
-strcat(file_name,"/data/");
-
-
-sprintf(temp_name,file_name);	strcat(temp_name,"layer_empty.png");
-icon_empty = util.load_bmp(temp_name);
-
-sprintf(temp_name,file_name);	strcat(temp_name,"layer_paint.png");
-icon_paint = util.load_bmp(temp_name);
-
-sprintf(temp_name,file_name);	strcat(temp_name,"layer_mask_paint.png");
-icon_mask = util.load_bmp(temp_name);
+	LayerWindow needs to
+	1) Notify BPMWindow of data changes caused by use of its child views' controls
+	2) Be able to change the values of the controls without the controls causing an
+		endless loop of passing the message buck.
 */
 
-icon_empty = BTranslationUtils::GetBitmap('bits',"layer_empty.png");
-icon_paint = BTranslationUtils::GetBitmap('bits',"layer_paint.png");
-icon_mask  = BTranslationUtils::GetBitmap('bits',"layer_mask_paint.png");
+LayerWindow::LayerWindow(BRect frame, char *title)
+				: BWindow(frame, title, B_FLOATING_WINDOW, B_NOT_MINIMIZABLE
+							| B_NOT_ZOOMABLE | B_WILL_ACCEPT_FIRST_CLICK | B_AVOID_FOCUS)
+{
+	BRect a_rect  = Bounds();
+	a_rect.bottom=LAYER_TOP_HEIGHT;
+	
+	options_view = new LayerOptionsView(a_rect);
+	AddChild(options_view);
+	
+	BRect rect  = Bounds();
+	rect.top += LAYER_TOP_HEIGHT+1;
 
-// extra security
-if (icon_empty == NULL) icon_empty= new BBitmap(rect, B_RGB32);
-if (icon_paint == NULL) icon_paint = new BBitmap(rect, B_RGB32);
-if (icon_mask  == NULL) icon_mask = new BBitmap(rect, B_RGB32);
+	layersview=new LayersView(rect);
+	AddChild(layersview);	
 
-active_pic=0;
-
+	SetSizeLimits( frame.Width(),frame.Width() , options_view->Bounds().Height()+LAYER_TOP_HEIGHT, 3000);
+	blackhole_handler=new BHandler("layerwindow_blackhole");
+	notify=true;
 }
 
+
+LayerWindow::~LayerWindow()
+{	BMessage *msg=new BMessage(LAYERWIN_CLOSED);
+	msg->AddRect("frame",Frame());
+	bpmwindow->PostMessage(msg);
+	delete blackhole_handler;
+}
+
+void LayerWindow::FrameMoved(BPoint origin)
+{
+#ifndef CHILDWIN_MOVED
+	#define CHILDWIN_MOVED 'cwmv'
+#endif
+
+	BMessage *msg=new BMessage(CHILDWIN_MOVED);
+	msg->AddPoint("layerwin",origin);
+	bpmwindow->PostMessage(msg);
+}
+
+void LayerWindow::SetControlNotification(bool enabled)
+{	// This bad boy diverts all control messages to the blackhole_handler -
+	// messages go in, but no one comes out...
+	if(enabled==true)
+	{
+		options_view->opacity->SetTarget(this);
+		options_view->draw_mode->Menu()->SetTargetForItems(this);
+		layersview->activelist->invoker->SetTarget(this);
+		layersview->activelist->SetTarget(this);
+		layersview->visiblelist->invoker->SetTarget(this);
+		layersview->visiblelist->SetTarget(this);
+	}
+	else
+	{
+		options_view->opacity->SetTarget(blackhole_handler);
+		options_view->draw_mode->Menu()->SetTargetForItems(blackhole_handler);
+		layersview->activelist->invoker->SetTarget(blackhole_handler);
+		layersview->activelist->SetTarget(blackhole_handler);
+		layersview->visiblelist->invoker->SetTarget(blackhole_handler);
+		layersview->visiblelist->SetTarget(blackhole_handler);
+	}
+	notify=enabled;
+}
+
+bpm_status LayerWindow::SetLayers(uint8 number,bool update_stack=false)
+{
+	layersview->number_layers=number;
+	if(update_stack==true)
+		layersview->UpdateLayerStack(true);
+	return BPM_OK;
+}
+
+bpm_status LayerWindow::ShowLayer(uint8 index,bool update_stack=false)
+{
+	layersview->visible[index]=true;
+	if(update_stack==true)
+		layersview->UpdateLayerStack(true);
+	return BPM_OK;
+}
+
+bpm_status LayerWindow::HideLayer(uint8 index,bool update_stack=false)
+{
+	layersview->visible[index]=false;
+	if(update_stack==true)
+		layersview->UpdateLayerStack(true);
+	return BPM_OK;
+}
+
+bpm_status LayerWindow::SetActive(uint8 index,bool update_stack=false)
+{
+	layersview->active_layer=index;
+	if(update_stack==true)
+		layersview->UpdateLayerStack(true);
+	return BPM_OK;
+}
+
+bpm_status LayerWindow::SetBlendMode(uint8 mode)
+{
+	options_view->draw_mode->Menu()->ItemAt(mode)->SetMarked(true);
+	return BPM_OK;
+}
+
+bpm_status LayerWindow::SetOpacity(uint8 value)
+{
+	options_view->opacity->SetValue(float(value));
+	return BPM_OK;
+}
+
+void LayerWindow::MessageReceived(BMessage *msg)
+{
+int8 tempint8,i,hidden_index;
+BMessage *tempmsg;
+	switch(msg->what)
+	{
+		case LAYER_ACTIVATE:
+			// Received when Active list is clicked
+			if(layersview->activelist->CurrentSelection()==-1 || notify==false)
+				break;
+			tempmsg=new BMessage(ALTER_LAYER_DATA);
+			tempint8=int8(layersview->activelist->CountItems()
+						-(layersview->activelist->CurrentSelection()+1) );
+			tempmsg->AddInt8("active_layer",tempint8);
+			bpmwindow->PostMessage(tempmsg);
+
+			// Update layer visibility if current layer hidden
+			if(layersview->visible[tempint8]==false)
+				layersview->visiblelist->Select(tempint8,true);
+			// no need to post message - Select() automagically generates one
+			break;
+			
+		case LAYER_TOGGLE_VISIBLE:
+			// Received when user clicks Visible list
+			if(notify==false)
+				break;
+			tempmsg=new BMessage(ALTER_LAYER_DATA);
+			hidden_index=0;
+			
+			for(i=0;i<layersview->number_layers;i++)
+			{	
+				layersview->visible[(layersview->number_layers-1)-i]=layersview->visiblelist->ItemAt(i)->IsSelected();
+				
+				if(layersview->visible[(layersview->number_layers-1)-i]==false)
+				{	tempmsg->AddInt8("hidden_layer",(layersview->number_layers-1)-i);
+					hidden_index++;
+				}
+			}
+			tempmsg->AddInt8("num_hidden_layers",hidden_index);
+			bpmwindow->PostMessage(tempmsg);
+			break;
+		case UPDATE_OPACITY:
+		{
+			int8 tempint8=options_view->opacity->Value();
+			tempmsg=new BMessage(ALTER_LAYER_DATA);
+			tempmsg->AddInt8("opacity",tempint8);
+			bpmwindow->PostMessage(tempmsg);
+			break;
+		}	
+		case UPDATE_TMODE:
+		{
+			int8 tempint8=options_view->draw_mode->Menu()->IndexOf(options_view->draw_mode->Menu()->FindMarked());
+			tempmsg=new BMessage(ALTER_LAYER_DATA);
+			tempmsg->AddInt8("blendmode",tempint8);
+			bpmwindow->PostMessage(tempmsg);
+			break;
+		}	
+		default:
+			BWindow::MessageReceived(msg);
+	}
+}
+
+LayerOptionsView::LayerOptionsView(BRect r) :
+	BView(r, "layeroptions", B_FOLLOW_LEFT_RIGHT | B_FOLLOW_TOP, B_WILL_DRAW)
+{
+	BRect rect;
+	
+	rect.Set(4,12,74,24);
+	SetViewColor(216,216,216);
+	
+	BMenu *modemenu = new BMenu("Drawing Mode");
+	modemenu->AddItem(new BMenuItem(SpTranslate("Normal"), new BMessage(UPDATE_TMODE)));
+	modemenu->AddItem(new BMenuItem(SpTranslate("Multiply"), new BMessage(UPDATE_TMODE)));
+	modemenu->AddItem(new BMenuItem(SpTranslate("Divide"), new BMessage(UPDATE_TMODE)));
+	modemenu->AddItem(new BMenuItem(SpTranslate("Difference"), new BMessage(UPDATE_TMODE)));
+	modemenu->AddItem(new BMenuItem(SpTranslate("Exclusion"), new BMessage(UPDATE_TMODE)));
+	modemenu->AddItem(new BMenuItem(SpTranslate("Lighten"), new BMessage(UPDATE_TMODE)));
+	modemenu->AddItem(new BMenuItem(SpTranslate("Darken"), new BMessage(UPDATE_TMODE)));
+	modemenu->AddItem(new BMenuItem(SpTranslate("OR"), new BMessage(UPDATE_TMODE)));
+	modemenu->AddItem(new BMenuItem(SpTranslate("Addition"), new BMessage(UPDATE_TMODE)));
+	modemenu->AddItem(new BMenuItem(SpTranslate("Subtract"), new BMessage(UPDATE_TMODE)));
+
+	modemenu->SetLabelFromMarked(true);
+
+	draw_mode = new BMenuField(rect,"",NULL,modemenu, B_FOLLOW_LEFT | B_FOLLOW_TOP,B_WILL_DRAW);
+	modemenu->ItemAt(0)->SetMarked(true);
+	modemenu->SetLabelFromMarked(true); 
+	AddChild(draw_mode);
+	
+	rect = Bounds();
+	rect.left =78;
+	rect.right = 228;
+	rect.top = 4;
+	
+	
+	opacity = new TSlider(rect,"opacityts",SpTranslate("Opacity"),"%d",
+							new BMessage(UPDATE_OPACITY),1,255);
+	
+	rgb_color a_col={128,128,255}; 
+	rgb_color a_colb={0,0,155}; 
+	opacity->SetBarColor(a_col);
+	opacity->UseFillColor(true,&a_colb);
+	opacity->SetHashMarks(B_HASH_MARKS_BOTTOM); 
+	opacity->SetHashMarkCount(10+1);
+
+	opacity->SetValue(255L);
+	AddChild(opacity);
+	
+	rect.left = Bounds().right-15;
+	rect.top = 15;
+	rect.right = Bounds().right;
+	rect.bottom = 30;
+	rect.OffsetBy(-2,2);
+	
+	tmenu = new TriangleMenuView(rect);
+	AddChild(tmenu);
+}
+
+void LayerOptionsView::Draw(BRect r)
+{
+	DrawString(SpTranslate("Blending mode:"),BPoint(5,9));
+}
+
+void LayerOptionsView::AttachedToWindow(void)
+{
+	if(Window()==NULL)
+		return;
+		
+	opacity->SetTarget(Window());
+	draw_mode->Menu()->SetTargetForItems(Window());
+}
+
+/*
+void LayerOptionsView::MessageReceived(BMessage *msg)
+{
+BMessage *updatemsg;
+	switch(msg->what)
+	{
+		case UPDATE_OPACITY:
+		{
+			int8 tempint8=opacity->Value();
+			updatemsg=new BMessage(ALTER_LAYER_DATA);
+			updatemsg->AddInt8("opacity",tempint8);
+			bpmwindow->PostMessage(updatemsg);
+			break;
+		}	
+		case UPDATE_TMODE:
+		{
+			int8 tempint8=draw_mode->Menu()->IndexOf(draw_mode->Menu()->FindMarked());
+			updatemsg=new BMessage(ALTER_LAYER_DATA);
+			updatemsg->AddInt8("blendmode",tempint8);
+			bpmwindow->PostMessage(updatemsg);
+			break;
+		}	
+		default:
+			BView::MessageReceived(msg);
+			break;
+	}
+}
+*/
+LayersView::LayersView(BRect frame) :
+	BView(frame,"layersview",B_FOLLOW_ALL,B_WILL_DRAW)
+{	
+	SetViewColor(216,216,216);
+	BRect rect(Bounds());
+	rect.top=15;
+	rect.right=rect.left+floor( (rect.Width()/2)-5);
+	rect.right -=B_V_SCROLL_BAR_WIDTH;
+
+	visiblelist=new LayerList(rect,"visiblelist",LAYER_TOGGLE_VISIBLE,B_MULTIPLE_SELECTION_LIST);
+	scrollvisible = new BScrollView("scrollvisible", visiblelist,
+											    B_FOLLOW_ALL, B_WILL_DRAW, FALSE, TRUE);
+	AddChild(scrollvisible);
+	rect.Set( (Bounds().Width()/2)+5,15,Bounds().Width(),Bounds().Height());
+	rect.right -=B_V_SCROLL_BAR_WIDTH;
+
+	activelist=new LayerList(rect,"activelist",LAYER_ACTIVATE,B_SINGLE_SELECTION_LIST);
+	scrollactive = new BScrollView("scrollactive", activelist,
+									    B_FOLLOW_ALL, B_WILL_DRAW, FALSE, TRUE);
+	AddChild(scrollactive);
+
+	for(int16 i=0;i<256;i++)
+		visible[i]=true;
+	active_layer=0;
+	number_layers=0;
+}
+
+LayersView::~LayersView(void)
+{
+}
+
+void LayersView::Draw(BRect update_rect)
+{
+	DrawString(SpTranslate("Visible"),BPoint(1,12));
+	DrawString(SpTranslate("Active"),BPoint((Bounds().Width()/2)+5,12));
+}
+
+void LayersView::UpdateLayerStack(bool imagesopen)
+{	int8 index;
+	visiblelist->EmptyList();
+	activelist->EmptyList();
+	
+	visiblelist->PopulateList(number_layers);
+	activelist->PopulateList(number_layers);
+	
+	visiblelist->DeselectAll();
+	
+	for(int16 i=0;i<number_layers; i++)
+		visiblelist->Select(i,visible[i]);
+
+	// Select currently active layer in list
+	index=activelist->CountItems()-(active_layer+1);
+	if(index<0)
+		index=0;
+	if(activelist->CountItems()>0)
+		activelist->Select(index);
+}
+
+LayerList::LayerList(BRect frame,const char *name,int32 message,list_view_type type) 
+	: BListView(frame,name,type)
+{
+	selectionmsg=(message != 0)?selectionmsg=message:0;
+	invoker=new BInvoker(new BMessage(message),(BHandler *)be_app);
+}
+
+void LayerList::AttachedToWindow(void)
+{	invoker->SetTarget(Window());
+}
+	
+void LayerList::SelectionChanged(void)
+{	if(selectionmsg != 0)
+//		Window()->PostMessage(new BMessage(selectionmsg));
+		invoker->Invoke();
+}	
+
+LayerList::~LayerList(void)
+{	delete invoker;
+}
+
+void LayerList::PopulateList(int8 number_layers)
+{	
+	EmptyList();
+	
+	char tempstr[255];
+	for(int8 i=0;i<number_layers;i++)
+	{	sprintf(tempstr,"Layer %d",i);
+	
+		AddItem(new BStringItem(tempstr),0);
+	}
+}
+
+void LayerList::EmptyList(void)
+{
+	while(CountItems()!=0)
+		delete RemoveItem( (int32)0 );
+}
+
+TriangleMenuView::TriangleMenuView(BRect r) : 
+	BView(r, "", B_FOLLOW_TOP | B_FOLLOW_RIGHT, B_WILL_DRAW)
+{
+	SetViewColor(216,216,216);
+	
+	off = BTranslationUtils::GetBitmap('bits',"triangle_menu.png");
+	on = BTranslationUtils::GetBitmap('bits',"triangle_menu_p.png");
+	img = off;
+	
+	pm = new  BPopUpMenu("", false, false, B_ITEMS_IN_COLUMN) ;
+	pm->AddItem(new BMenuItem(SpTranslate("New"),new BMessage(LAYER_NEW)));
+	pm->AddItem(new BMenuItem(SpTranslate("Duplicate"),new BMessage(LAYER_DUPLICATE)));
+	pm->AddItem(new BMenuItem(SpTranslate("Delete"),new BMessage(LAYER_DELETE)));
+	pm->AddSeparatorItem();
+	pm->AddItem(new BMenuItem(SpTranslate("Make Composite Layer"),new BMessage(LAYER_COMPOSITE)));
+	pm->AddItem(new BMenuItem(SpTranslate("Flatten"),new BMessage(LAYER_FLATTEN)));
+	pm->AddSeparatorItem();
+	pm->AddItem(new BMenuItem(SpTranslate("Move Up"),new BMessage(LAYER_MOVE_UP)));
+	pm->AddItem(new BMenuItem(SpTranslate("Move Down"),new BMessage(LAYER_MOVE_DOWN)));
+	pm->AddItem(new BMenuItem(SpTranslate("Move to Top"),new BMessage(LAYER_MOVE_TOP)));
+	pm->AddItem(new BMenuItem(SpTranslate("Move to Bottom"),new BMessage(LAYER_MOVE_BOTTOM)));
+//	pm->SetTargetForItems(bpmwindow);
+	pm->SetTargetForItems(be_app);
+}
 
 TriangleMenuView::~TriangleMenuView()
 {
-delete on;
-delete off;
-}
-
-PaintModeView::~PaintModeView()
-{
-delete icon_paint;
-delete icon_mask;
-delete icon_empty;
-}
-
-TriangleMenuView::TriangleMenuView(BRect r,share *sh) : 
-	BView(r, "", B_FOLLOW_TOP | B_FOLLOW_RIGHT, B_WILL_DRAW)
-{
-
-shared = sh;
-SetViewColor(216,216,216);
-
-off = BTranslationUtils::GetBitmap('bits',"triangle_menu.png");
-on = BTranslationUtils::GetBitmap('bits',"triangle_menu_p.png");
-img = off;
-
-pm = new  BPopUpMenu("", false, false, B_ITEMS_IN_COLUMN) ;
-
-pm->AddItem(new BMenuItem(Language.get("ADD_LAYER"), new BMessage(ADD_LAYER) ));
-pm->AddItem(new BMenuItem(Language.get("ADD_GUIDE_LAYER"), new BMessage(ADD_GUIDE_LAYER) ));
-pm->AddItem(new BMenuItem(Language.get("DELETE_LAYER"), new BMessage(DELETE_LAYER) ));
-pm->AddItem(new BMenuItem(Language.get("DUPLICATE_LAYER"), new BMessage(DUPLICATE_LAYER) ));
-pm->AddSeparatorItem();
-pm->AddItem(new BMenuItem(Language.get("MERGE_LAYERS"), new BMessage(MERGE_LAYERS) ));
-pm->AddItem(new BMenuItem(Language.get("MERGE_VISIBLE_LAYERS"), new BMessage(MERGE_VISIBLE_LAYERS) ));
-pm->AddItem(new BMenuItem(Language.get("FLATTEN_IMAGE"), new BMessage(FLATTEN_IMAGE) ));
-pm->AddSeparatorItem();
-pm->AddItem(new BMenuItem(Language.get("DISPLAY_OPTIONS"), new BMessage(DISPLAY_OPTIONS) ));
-
-//pm->SetTargetForItems(this->Window());
-
-pm->SetTargetForItems(util.layerWin); 
-
+	delete on;
+	delete off;
 }
 
 
@@ -106,679 +418,4 @@ void TriangleMenuView::MouseDown(BPoint point)
 	pm->Go(ConvertToScreen(point),true,false,false);
 	img = off;
 	Draw(Bounds());
-	
-}
-
-
-LayerOptionsView::LayerOptionsView(BRect r, share *sh) : 
-	BView(r, "lay_options_view", B_FOLLOW_LEFT_RIGHT | B_FOLLOW_TOP, B_WILL_DRAW)
-{
-BRect rect;
-
-rect.Set(4,12,4+100,12+12);
-shared = sh;
-SetViewColor(216,216,216);
-
-
-BMenuItem *it;
-BMenu *mode_menu = new BMenu("Drawing Mode");
-mode_menu->AddItem(it = new BMenuItem(Language.get("PM_NORMAL"), new BMessage(MODE_CHANGED)));
-mode_menu->AddItem(new BMenuItem(Language.get("PM_MULTIPLY"),   new BMessage(MODE_CHANGED)));
-mode_menu->AddItem(new BMenuItem(Language.get("PM_LIGHTEN"),    new BMessage(MODE_CHANGED)));
-mode_menu->AddItem(new BMenuItem(Language.get("PM_DARKEN"),     new BMessage(MODE_CHANGED)));
-mode_menu->AddItem(new BMenuItem(Language.get("PM_COLORIZE"),   new BMessage(MODE_CHANGED)));
-mode_menu->AddItem(new BMenuItem(Language.get("PM_DIFFERENCE"), new BMessage(MODE_CHANGED)));
-mode_menu->AddItem(new BMenuItem(Language.get("PM_COMBINE"),    new BMessage(MODE_CHANGED)));
-it->SetMarked(true);
-
-mode_menu->SetLabelFromMarked(true); 
-draw_mode = new BMenuField(rect,"",NULL,mode_menu, B_FOLLOW_LEFT | B_FOLLOW_TOP,B_WILL_DRAW);
-mode_menu->SetLabelFromMarked(true); 
-
-AddChild(draw_mode);
-
-rect = Bounds();
-rect.left =108;
-rect.right = 108+150;
-rect.top = 4;
-
-
-opacity = new BSlider(rect,NULL,"100%",new BMessage(TRANSP_CHANGED),
-							0,100,B_TRIANGLE_THUMB,B_FOLLOW_LEFT | B_FOLLOW_TOP, B_WILL_DRAW);
-
-rgb_color a_col={128,128,255}; 
-rgb_color a_colb={0,0,155}; 
-opacity->SetBarColor(a_col);
-opacity->UseFillColor(true,&a_colb);
-opacity->SetHashMarks(B_HASH_MARKS_BOTTOM); 
-opacity->SetHashMarkCount(10+1);
-opacity->SetValue(100);
-
-AddChild(opacity);
-
-rect.right = Bounds().right;
-rect.left = rect.right-(16-1);
-rect.top = 0;
-rect.bottom = 16-1;
-rect.OffsetBy(-2,2); //avoid the edge
-
-
-t_menu_view = new TriangleMenuView(rect, shared);							
-AddChild(t_menu_view);
-
-}
-
-void PaintModeView::Draw(BRect update_rect)
-{
-	switch(active_pic)
-	{
-		case ICON_EMPTY:	DrawBitmap(icon_empty);  break;
-		case ICON_PAINT:	DrawBitmap(icon_paint);  break;
-		case ICON_MASK:		DrawBitmap(icon_mask);   break;
-	}
-}		
-
-
-
-void PaintModeView::MouseDown(BPoint point)
-{
- the_parent->MouseDown(point);
-}
-
-
-OneLayerView::OneLayerView(const char *name, BRect r,  Layer *ly, share *sh) : 
-	BView(r, name, B_FOLLOW_TOP | B_FOLLOW_LEFT, B_WILL_DRAW)
-{
-shared = sh;
-SetViewColor(216,216,216);
-
-//resize image to a square of shared->perso_layer_size
-the_layer = ly; 
-
-
-BRect rect;
-rect.Set(4,4,4+16,4+16);
-
-//need the pointer because the id can change if you delete a layer
-
-BMessage *x = new BMessage(MAKE_VISIBLE);			
-x->AddPointer("layer",the_layer);
-		
-CreateButton("layer_empty.png","layer_visible.png");
-visible_button = new BPictureButton(rect,"",off, on, x, B_TWO_STATE_BUTTON);
-AddChild(visible_button);
-			
-rect.OffsetBy(16+2,0);
-p_mod = new PaintModeView("",rect,shared,this);
-AddChild(p_mod);
-
-bb_help.SetHelp(visible_button,Language.get("VISIBLE"));
-bb_help.SetHelp(p_mod,Language.get("VISIBLE"));
-
-float ratio_lh;			
-if (ly->layer_type == LAYER_TYPE_BITMAP)
-	ratio_lh = ly->img->Bounds().Width() / ly->img->Bounds().Height();
-else 
-	ratio_lh =1;
-
-if (ratio_lh > 1)
-	mini_view_rect.Set(0,0,(LAYER_VIEW_HEIGHT-8)*1.333,((LAYER_VIEW_HEIGHT-8))/ratio_lh);
-else  
-	mini_view_rect.Set(0,0,(LAYER_VIEW_HEIGHT-8)*ratio_lh,LAYER_VIEW_HEIGHT-8);
-
-//Centering
-if (mini_view_rect.Height() < LAYER_VIEW_HEIGHT-8) 
-		mini_view_rect.OffsetBy(0,( (LAYER_VIEW_HEIGHT-8)-mini_view_rect.Height())/2);
-if (mini_view_rect.Width() < (LAYER_VIEW_HEIGHT-8)*1.333) 
-		mini_view_rect.OffsetBy( (((LAYER_VIEW_HEIGHT-8)*1.333)-mini_view_rect.Width() )/2,0);
-
-mini_view_rect.OffsetBy(4+16+4+16+4, 4);
-mini_alpha_rect = mini_view_rect;
-mini_alpha_rect.OffsetBy(8+((LAYER_VIEW_HEIGHT)*1.3),0);
-
-rect.Set(80,4,Bounds().right-4,20);
-the_nom = new LayerNameView("",the_layer->name,rect,this);
-AddChild(the_nom);
-
-char str[200];
-if (ly->layer_type == LAYER_TYPE_BITMAP)
-	sprintf(str,"%ld x %ld pixels", int32(the_layer->img->Bounds().Width()+1), int32 ( the_layer->img->Bounds().Height()+1));
-else 
-	sprintf(str,ly->name);
-bb_help.SetHelp(this, str);
-
-}
-
-
-void OneLayerView::Draw(BRect update_rect)
-{
- //deactivate during creation and loading of image and layer
-if (ThePrefs.no_pictures_left==OFF)
-{
-	switch(the_layer->layer_type)
-	{	
-		case LAYER_TYPE_BITMAP:		
-			DrawBitmap(the_layer->img,the_layer->img->Bounds(),mini_view_rect); 	break;		
-		case LAYER_TYPE_TEXT:	
-			//DrawBitmap(the_layer->img,the_layer->img->Bounds(),mini_view_rect); 
-			break;		
-		case LAYER_TYPE_EFFECT:	
-			//DrawBitmap(the_layer->img,the_layer->img->Bounds(),mini_view_rect); 	
-			break;		
-		case LAYER_TYPE_GUIDE:	
-			//DrawBitmap(the_layer->img,the_layer->img->Bounds(),mini_view_rect); 	
-			break;		
-		default: beep(); beep(); printf("Layer has invalid type!!!!"); break;				
-	}
-			
-	SetHighColor(0,0,200);
-	SetPenSize(1);
-
-
-	if (the_layer->active==true)
-	{ 	
-		StrokeRect(Bounds(), B_SOLID_HIGH);
-		
-		if (the_layer->alpha_activated==false)
-		{
-			//DrawBitmap(alpha_pic,alpha_pic->Bounds(),mini_alpha_rect);
-			StrokeRect(mini_alpha_rect, B_SOLID_HIGH);
-			p_mod->active_pic =1; //brush (drawing on the copy)
-			
-		}
-		else 
-		{
-			StrokeRect(mini_view_rect, B_SOLID_HIGH);
-			p_mod->active_pic =2; //mask
-			
-		}
-	}
-	else
-		p_mod->active_pic =0; // mask not active
-}
-	
-}		
-
-
-
-void OneLayerView::MouseDown(BPoint point)
-{
-
-	BMessage msg_x(ACTIVATE_LAYER);
-	msg_x.AddInt32("num",the_layer->id);
-	util.mainWin->PostMessage(&msg_x);
-
-}
-
-
-LayerNameView::LayerNameView(const char *name, const char *layer_name, BRect r, BView* the_p) : 
-	BStringView(r, name, layer_name, B_FOLLOW_ALL, B_WILL_DRAW )
-{
-	the_parent = the_p;
-}
-
-void LayerNameView::MouseDown(BPoint point)
-{
- 
- the_parent->MouseDown(point);
- 	
-}
-
-
-LayerWindow::LayerWindow(BRect frame, char *title, share *sh)
-				: BWindow(frame, title, B_FLOATING_WINDOW, B_NOT_MINIMIZABLE | 
-							B_NOT_ZOOMABLE | B_WILL_ACCEPT_FIRST_CLICK | B_AVOID_FOCUS)
-{
-
-shared=sh;
-shared->display_menu->ItemAt(2)->SetMarked(true);
-ThePrefs.layer_selector_open=true;
-util.layerWin=this;
-
-BRect a_rect  = Bounds();
-a_rect.bottom=LAYER_TOP_HEIGHT;
-
-options_view = new LayerOptionsView(a_rect,shared);
-AddChild(options_view);
-
-
-BRect rect  = Bounds();
-
-rect.right -= B_V_SCROLL_BAR_WIDTH;
-rect.top += LAYER_TOP_HEIGHT+1;
-
-pr_br_view = new AllLayersView(rect, shared);
-
-perso_scroll_view = new BScrollView(Language.get("LAYERS"), pr_br_view, 
-										    B_FOLLOW_ALL, B_WILL_DRAW, FALSE, TRUE);
-
-
-AddChild(perso_scroll_view);
-
-//AddChild(perso_scroll_view);
-
-SetSizeLimits(ThePrefs.layer_frame.Width(),400 , LAYER_VIEW_HEIGHT+LAYER_TOP_HEIGHT+1, 3000);	
-//image always active
-
-FrameResized(Bounds().Width(),Bounds().Height()); //resize scrollbar
-PostMessage(INIT_PERSO);
-
-/*
-if (shared->act_img!=NULL)
-{
-	BMessage tmp(DRAW_LAYERS);
-	tmp.AddInt32("active",shared->act_img->active_layer);	
-	PostMessage(&tmp);
-}
-*/
-PostMessage(new BMessage(TRANSP_CHANGED));
-
-// for staying in front of the drawn image
-}
-
-
-LayerWindow::~LayerWindow()
-{
-	ThePrefs.layer_selector_open = false;
-	ThePrefs.layer_frame = Frame(); //in order to use it again later
-	shared->display_menu->ItemAt(2)->SetMarked(false);
-}
-
-void AllLayersView::AddLayers()
-{
-
-Window()->FrameResized(Window()->Bounds().Width(),Window()->Bounds().Height()); //histoire qu'il réactive les menus
-
-if (shared->act_img!=NULL)
-{
-
-	Window()->Lock();
-
-	// erasing the old layers
-	while (ChildAt(0) !=NULL)
-		ChildAt(0)->RemoveSelf();
-
-	BRect rect;
-	rect.Set(0,0,Bounds().Width()-1,LAYER_VIEW_HEIGHT);
-
-	char str[255];
-
-    int32 i = shared->act_img->layer_amount;
-	
-	//descending order so that background layer is on bottom
-	while (i!= -1)
-	{ 
-	
-		sprintf(str,"lyview_%ld",i);
-		tab_layer_views[i]= new OneLayerView(str, rect, shared->act_img->the_layers[i], shared);
-	
-		rect.OffsetBy(0,LAYER_VIEW_HEIGHT);
-	
-		AddChild(tab_layer_views[i]);
-		i--;
-	} 
-		
-	Window()->Unlock();
-	Window()->FrameResized(Window()->Bounds().Width(),Window()->Bounds().Height());
-}
-
-}
-
-bool AllLayersView::ActivateLayer(int32 index=0)
-{	//Returns false if index was invalid or couldn't activate layer
-	return false;
-}
-
-void LayerWindow::FrameResized(float x, float y)
-{
-if (ThePrefs.no_pictures_left ==OFF)
-{
-	if (shared->act_img!=NULL)
-	{
-		is_disabled = false;
- 		options_view->opacity->SetEnabled(true);
-		options_view->draw_mode->SetEnabled(true);
-	
-		int32 am = shared->act_img->layer_amount;
-
-		if (pr_br_view!=NULL)
-		{
-			int32 val =  (int32) ( ((am+1)*LAYER_VIEW_HEIGHT)+ -(y-LAYER_TOP_HEIGHT)); // div par 3 et arrondi vers le haut
-			perso_scroll_view->ScrollBar(B_VERTICAL)->SetRange(0,val);
-		}
-	}
-	else
-	{
-	
-		is_disabled = true;
-		options_view->opacity->SetEnabled(false);
-		options_view->draw_mode->SetEnabled(false);
-	
-	}
-}
-	
-	
-}
-
-void LayerWindow::MessageReceived(BMessage *msg)
-{
-
-if (is_disabled==false && ThePrefs.no_pictures_left==OFF)
-{
-		
-int32 act;
-int32 i;
-char str[255];
-char str2[255];
-BMessage *msg_a;
-int32 lay_amount;
-//BBitmap* img;
-//BRect rect;
-Layer *lyp;
-void *ptr;
-BAlert *alert;
-
-	switch (msg->what)
-	{
-		case B_KEY_DOWN:
-			util.mainWin->PostMessage(msg);
-			break;
-
-		case DRAW_LAYERS:
-		
-			//clear old squares and draw the new one.
-			i=0;
-			lay_amount = shared->act_img->layer_amount;
-			while(i != lay_amount+1)
-			{   
-				if (pr_br_view->tab_layer_views[i]!=NULL)
-				{
-					pr_br_view->tab_layer_views[i]->the_layer->active=false;
-					pr_br_view->tab_layer_views[i]->Invalidate();
-					pr_br_view->tab_layer_views[i]->Draw(pr_br_view->tab_layer_views[i]->Bounds());
-	
-					pr_br_view->tab_layer_views[i]->p_mod->active_pic = ICON_EMPTY;
-					pr_br_view->tab_layer_views[i]->p_mod->Invalidate();
-					pr_br_view->tab_layer_views[i]->p_mod->Draw(pr_br_view->tab_layer_views[i]->p_mod->Bounds());
-		
-					if (pr_br_view->tab_layer_views[i]->the_layer->is_visible ==true)
-						pr_br_view->tab_layer_views[i]->visible_button->SetValue(B_CONTROL_ON);
-					else 
-						pr_br_view->tab_layer_views[i]->visible_button->SetValue(B_CONTROL_OFF);
-				}
-				i++;
-			} 
-		
-			msg->FindInt32("active",&act);	
-		
-			pr_br_view->tab_layer_views[act]->Invalidate();
-			pr_br_view->tab_layer_views[act]->Draw(pr_br_view->tab_layer_views[act]->Bounds());
-			pr_br_view->tab_layer_views[act]->the_layer->active=true;
-		
-			pr_br_view->tab_layer_views[act]->p_mod->active_pic = ICON_PAINT;
-			pr_br_view->tab_layer_views[act]->p_mod->Invalidate();
-			pr_br_view->tab_layer_views[act]->p_mod->Draw(pr_br_view->tab_layer_views[act]->p_mod->Bounds());
-		
-			shared->act_lay = pr_br_view->tab_layer_views[act]->the_layer;
-		
-	
-			
-			options_view->draw_mode->Menu()->ItemAt(shared->act_lay->draw_mode)->SetMarked(true); 
-			options_view->opacity->SetValue(shared->act_lay->opacity);
-		/*
-			//first layer must be in normal mode at 100% opacity
-			if (shared->act_lay->id ==0)
-			{
-				options_view->draw_mode->SetEnabled(false);
-				options_view->opacity->SetEnabled(false);
-			}
-			*/
-			PostMessage(TRANSP_CHANGED);
-			break;
-		
-		case UPDATE_ACTIVE_LAYER:
-			msg->FindInt32("active",&act);	
-			pr_br_view->tab_layer_views[act]->Draw(pr_br_view->tab_layer_views[act]->Bounds());
-			break;
-		
-		case INIT_PERSO:
-			if (msg->FindInt32("active",&act)!=B_OK)
-				act =0;	
-
-			pr_br_view->AddLayers();
-			msg_a = new BMessage(DRAW_LAYERS);
-			msg_a->AddInt32("active",act); //select the first
-			if (ThePrefs.layer_selector_open==true)
-				util.layerWin->PostMessage(msg_a);
-			break;
-		
-		case MAKE_VISIBLE:
-// with MetroWerks on PPC you could just do :  msg->FindPointer("layer",&lyp);	
-// but with GNU you need void pointer and then a cast to Layer*
-			msg->FindPointer("layer",&ptr);	
-			lyp = (Layer*) ptr; //cast as Layer*
-
-			if (lyp->is_visible==true)
-				lyp->is_visible=false;
-			else
-				lyp->is_visible=true;
-		
-			switch(lyp->layer_type)
-			{	
-				case LAYER_TYPE_BITMAP:		
-					msg_a = new BMessage(UPDATE_ME);
-					msg_a->AddRect("zone",shared->act_img->the_layers[0]->img->Bounds());
-					util.mainWin->PostMessage(msg_a);
-					break;
-				case LAYER_TYPE_TEXT:	
-					//DrawBitmap(the_layer->img,the_layer->img->Bounds(),mini_view_rect); 
-					break;		
-				case LAYER_TYPE_EFFECT:	
-					//DrawBitmap(the_layer->img,the_layer->img->Bounds(),mini_view_rect); 	
-					break;		
-				case LAYER_TYPE_GUIDE:	
-					//DrawBitmap(the_layer->img,the_layer->img->Bounds(),mini_view_rect); 	
-					break;		
-				default: 
-					beep(); beep(); 
-					printf("Invalid Layer Type in LayerWindow::MessageReceived!");
-					break;
-			}
-			break;
-		
-		case TRANSP_CHANGED:
-			if (shared->act_img!=NULL)
-			{
-				sprintf(str,Language.get("OPACITY"));
-				sprintf(str2," %ld%%",int32(options_view->opacity->Value()));
-				strcat(str,str2);
-				options_view->opacity->SetLabel(str);
-				shared->act_lay->opacity = options_view->opacity->Value();
-
-				switch(shared->act_lay->layer_type)
-				{	
-					case LAYER_TYPE_BITMAP:		
-						msg_a = new BMessage(UPDATE_ME);
-						msg_a->AddRect("zone",shared->act_img->the_layers[0]->img->Bounds());
-						util.mainWin->PostMessage(msg_a);
-						break;
-					case LAYER_TYPE_TEXT:	
-						//DrawBitmap(the_layer->img,the_layer->img->Bounds(),mini_view_rect); 
-						break;		
-					case LAYER_TYPE_EFFECT:	
-						//DrawBitmap(the_layer->img,the_layer->img->Bounds(),mini_view_rect); 	
-						break;		
-					case LAYER_TYPE_GUIDE:	
-						//DrawBitmap(the_layer->img,the_layer->img->Bounds(),mini_view_rect); 	
-						break;		
-					default: 
-						beep(); beep(); 
-						printf("Invalid Layer Type in LayerWindow::MessageReceived!");
-						break;
-				}
-			}
-			break;
-		
-		case ADD_LAYER:
-			shared->act_img->CreateNewLayer(NULL);
-			// alert layer_amount to change
-			shared->act_lay = shared->act_img->the_layers[shared->act_img->active_layer];
-			shared->initLayer();
-			pr_br_view->AddLayers();
-		
-			msg_a = new BMessage(DRAW_LAYERS);
-			msg_a->AddInt32("active", shared->act_img->active_layer);	
-			PostMessage(msg_a);
-			break;
-		
-		case ADD_GUIDE_LAYER:
-			shared->act_img->CreateNewGuideLayer(NULL);
-			// alert layer_amount to change
-			shared->act_lay = shared->act_img->the_layers[shared->act_img->active_layer];
-			pr_br_view->AddLayers();
-		
-			msg_a = new BMessage(DRAW_LAYERS);
-			msg_a->AddInt32("active", shared->act_img->active_layer);	
-			PostMessage(msg_a);
-			break;
-		
-		case DELETE_LAYER: 
-			if (shared->act_img->layer_amount <= 0)
-			{
-				alert = new BAlert("",Language.get("NEED_ONE_LAYER"),"Oops"); 
-    			alert->Go();
-	    	}
-			else
-			{
-				ThePrefs.no_pictures_left=OFF; //stop drawing
-				act = shared->act_img->active_layer;
-				shared->act_img->DeleteLayer(act);
-				// alert layer_amount to change
-				shared->act_lay = shared->act_img->the_layers[shared->act_img->active_layer];
-				shared->initLayer();
-				ThePrefs.no_pictures_left=ON; //restart drawing
-				pr_br_view->AddLayers();	
-
-				msg_a = new BMessage(DRAW_LAYERS);
-				msg_a->AddInt32("active",shared->act_img->active_layer);	
-				PostMessage(msg_a);
-	
-				msg_a = new BMessage(ACTIVATE_LAYER);
-				msg_a->AddInt32("num",shared->act_img->active_layer);
-				util.mainWin->PostMessage(msg_a);
-			}
-			break;
-		
-		case DUPLICATE_LAYER:
-			switch(shared->act_lay->layer_type)
-			{	
-				case LAYER_TYPE_BITMAP:		
-					shared->act_img->NewLayerFromBmp(shared->act_lay->img);
-					// alert layer_amount to change
-					shared->act_lay = shared->act_img->the_layers[shared->act_img->active_layer];
-					shared->initLayer();
-					break;
-				case LAYER_TYPE_TEXT:	
-					util.NotImplemented();
-					break;		
-				case LAYER_TYPE_EFFECT:	
-					util.NotImplemented();
-					break;		
-				case LAYER_TYPE_GUIDE:	
-					util.NotImplemented();
-					break;		
-				default: 
-					beep(); beep(); 
-					printf("Invalid Layer Type in LayerWindow::MessageReceived!");
-					break;
-			}
-		
-			pr_br_view->AddLayers();
-
-			msg_a = new BMessage(DRAW_LAYERS);
-			msg_a->AddInt32("active",shared->act_img->active_layer);	
-			PostMessage(msg_a);
-			break;
-		
-		case MERGE_LAYERS: 	
-			util.NotImplemented();
-			break;
-		
-		case MERGE_VISIBLE_LAYERS: 
-			util.NotImplemented();
-			break;
-		
-		case FLATTEN_IMAGE: 		
-			util.NotImplemented();
-			break;
-		
-		case DISPLAY_OPTIONS:	
-			util.NotImplemented();
-			break;
-
-		case MODE_CHANGED: 		
-			shared->act_lay->draw_mode = options_view->draw_mode->Menu()->IndexOf(options_view->draw_mode->Menu()->FindMarked());
-
-			msg_a = new BMessage(UPDATE_ME);  
-			msg_a->AddRect("zone",shared->act_img->the_layers[0]->img->Bounds());
-			util.mainWin->PostMessage(msg_a);
-			break;
-
-		default:
-			BWindow::MessageReceived( msg );
-   			   		   	
-	 }//end msg->what switch
-
-}//end if shared->act_img!=NULL
-   	 	
-}
-
-
-void LayerWindow::FrameMoved(BPoint screenPoint)
-{
-	 //keep in front of active image
-}
-
-
-void OneLayerView::CreateButton(char nm[255],char nm2[255])
-{
-BBitmap *downBitmap, *upBitmap;
-BRect rect;
-
-rect.Set(0,0, 16-1, 16-1);
-
-//fill bitmap
-downBitmap = BTranslationUtils::GetBitmap('bits',nm);
-upBitmap = BTranslationUtils::GetBitmap('bits',nm2);
-
-			
-//extra security
-if (upBitmap==NULL)
-	upBitmap = new BBitmap(rect, B_RGB32);
-if (downBitmap==NULL)
-	downBitmap = new BBitmap(rect, B_RGB32);
-		
-
-//need to make a new window
-BWindow* x= new BWindow(rect,"", B_FLOATING_WINDOW, Flags(), B_CURRENT_WORKSPACE);
-			
-//tempview for creating the picture
-BView *tempView = new BView( rect, "temp", B_FOLLOW_NONE, B_WILL_DRAW );
-			
-x->AddChild(tempView);
-
-//create on picture
-tempView->BeginPicture(new BPicture); 
-tempView->DrawBitmap(upBitmap);
-on = tempView->EndPicture();
-
-//create off picture
-tempView->BeginPicture(new BPicture); 
-tempView->DrawBitmap(downBitmap);
-off = tempView->EndPicture();
-
-//get rid of tempview
-x->RemoveChild(tempView);
-delete tempView;
-delete x;
 }
