@@ -22,7 +22,7 @@ BPMWindow::BPMWindow(BRect frame)
 	menubar = new BMenuBar(rect, "menubar");
 
 	BMenu *tempmenu;
-	
+
 	tempmenu = new BMenu(SpTranslate("Save As"));
 	tempmenu->AddItem(new BMenuItem(SpTranslate("via Translator"),new BMessage(FILE_EXPORT_BITMAP),'X',B_COMMAND_KEY|B_SHIFT_KEY));
 
@@ -37,7 +37,7 @@ BPMWindow::BPMWindow(BRect frame)
 	filemenu->AddSeparatorItem();
 	filemenu->AddItem(new BMenuItem(SpTranslate("Quit"),new BMessage(FILE_QUIT),'Q',B_COMMAND_KEY));
 	menubar->AddItem(filemenu);
-	
+
 	editmenu = new BMenu(SpTranslate("Edit"));
 	editmenu->AddItem(new BMenuItem(SpTranslate("Undo"),new BMessage(EDIT_UNDO),'Z',B_COMMAND_KEY));
 //	editmenu->AddSeparatorItem();
@@ -70,10 +70,10 @@ BPMWindow::BPMWindow(BRect frame)
 	maskmenu->AddItem(new BMenuItem(SpTranslate("Select All"),new BMessage(SELECT_ALL),'a',B_COMMAND_KEY));
 	maskmenu->AddItem(new BMenuItem(SpTranslate("Select None"),new BMessage(SELECT_NONE),'d',B_COMMAND_KEY));
 	menubar->AddItem(maskmenu);
-	
+
 	filtermenu = new BMenu("Plugin");
 	menubar->AddItem(filtermenu);
-	
+
 	windowmenu = new BMenu(SpTranslate("Image in Memory"));
 	windowmenu->SetRadioMode(true);
 
@@ -99,41 +99,43 @@ BPMWindow::BPMWindow(BRect frame)
 	displaymenu->AddSeparatorItem();
 	displaymenu->AddItem(new BMenuItem("Force Redraw",new BMessage(FORCE_REDRAW),'r',B_COMMAND_KEY));
 	menubar->AddItem(displaymenu);
-	
+
 	helpmenu = new BMenu(SpTranslate("Help"));
 //	helpmenu->AddItem(new BMenuItem(SpTranslate("What's This?"),new BMessage(HELP_WHATSTHIS)));
 //	helpmenu->AddItem(new BMenuItem(SpTranslate("User's Manual"),new BMessage(HELP_MANUAL)));
 //	helpmenu->AddSeparatorItem();
 	helpmenu->AddItem(new BMenuItem(SpTranslate("About"),new BMessage(HELP_ABOUT)));
 	menubar->AddItem(helpmenu);
-	
+
 	AddChild(menubar);
 	SetFileMenuState(false);
 	SetPluginMenuState(false);
-	
+
 	// Set up the two views - one for the desktop and one for the images
 	// The desktop one will allow us to customize the background, amongst
 	// other things. There are probably better ways to do this...
 	imgview=new PicView( BRect(100,100,300,300), B_FOLLOW_H_CENTER | B_FOLLOW_V_CENTER);
 	imgview->Hide();
-	
+
 	BRect dsr(Bounds());
 	dsr.top=20;
 	dsr.right=dsr.left+Bounds().Width()-B_V_SCROLL_BAR_WIDTH;
 	dsr.bottom=dsr.top+Bounds().Height()-B_H_SCROLL_BAR_HEIGHT-20;
-	
+
 	desktop=new DesktopView(dsr,imgview);
 	desktop->SetViewColor(192,192,192);
-	
+
 	// Gots to be able to scroll these bad boys around, too.
 	scrollview = new BScrollView("scrollview", desktop, B_FOLLOW_ALL, B_WILL_DRAW,TRUE, TRUE);
 	desktop->AddChild(imgview);
 	AddChild(scrollview);
 	hscrollbar 	= scrollview->ScrollBar(B_HORIZONTAL);
 	vscrollbar 	= scrollview->ScrollBar(B_VERTICAL);
+	hscrollbar->SetRange(0,0);
+	vscrollbar->SetRange(0,0);
 
 	Unlock();
-	
+
 	untitled=0;
 	createwin_open=false;
 	openpanel=new BPMOpenPanel();
@@ -154,13 +156,13 @@ BPMWindow::BPMWindow(BRect frame)
 
 	// Load and set application preferences
 	app_prefs.Load("/boot/home/config/settings/BePhotoMagic-0.60");
-	
+
 	// Reset main window size
 	ResizeTo(app_prefs.mainwin_frame.Width(),app_prefs.mainwin_frame.Height());
 	MoveTo(app_prefs.mainwin_frame.LeftTop());
 
 	normal_frame=app_prefs.mainwin_frame;
-	
+
 	if(app_prefs.toolwin_open==true)
 	{	toolwin=new ToolWindow(app_prefs.toolwin_frame, false);
 		toolwin->toolbara->SetButton("paintbrush",true);
@@ -205,13 +207,13 @@ BPMWindow::BPMWindow(BRect frame)
 		mousewin->MoveTo(app_prefs.mousepoint);
 		mousewin->Show();
 	}
-	
+
 	bpmwindow=(BWindow *)this;
 	textwin_open=false;
 }
 
 BPMWindow::~BPMWindow()
-{	
+{
 	app_prefs.Save("/boot/home/config/settings/BePhotoMagic-0.60");
 	Image_Shutdown();
 	delete openpanel;
@@ -237,7 +239,7 @@ bool BPMWindow::QuitRequested()
 }
 
 void BPMWindow::FrameResized(float width, float height)
-{	
+{
 	CenterImageView(true);
 	if(saveframe==true)
 		app_prefs.mainwin_frame=Frame();

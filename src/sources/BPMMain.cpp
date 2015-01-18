@@ -27,8 +27,6 @@ BPMApplication::BPMApplication()
 	mainwin->SetSizeLimits(320,screen.Frame().Width()-1,270,screen.Frame().Height()-1);
 	mainwin->Show();
 	mainwin->Activate();
-	mainwin->hscrollbar->SetRange(0,0);
-	mainwin->vscrollbar->SetRange(0,0);
 
 	filterwin_open=false;
 	textwin_open=false;
