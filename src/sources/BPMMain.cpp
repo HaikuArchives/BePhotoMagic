@@ -7,14 +7,14 @@ BWindow *bpmwin;
 #endif
 
 int main()
-{	
+{
  	BPMApplication	myApplication;
 	myApplication.Run();
 	return(0);
 }
 
 BPMApplication::BPMApplication()
-		  		  : SpLocaleApp("application/x-vnd.bpm-BePhotoMagic")
+		  		  : BApplication("application/x-vnd.bpm-BePhotoMagic")
 {
 	aboutwin=new AboutWindow(true);
 	aboutwin->Show();
@@ -33,7 +33,7 @@ BPMApplication::BPMApplication()
 	filterwin_open=false;
 	textwin_open=false;
 	waitwin_open=false;
-	
+
 	aboutwin->Lock();
 	aboutwin->Close();
 }
@@ -47,7 +47,7 @@ void BPMApplication::ArgvReceived(int32 argc, char **argv)
 	int32 i = 1;
 	argv++; 			//skip first command-line arg (name of executable)
 	char namestr[255];
-	
+
 	do
 	{
 		sprintf(namestr,*argv);
@@ -58,23 +58,23 @@ void BPMApplication::ArgvReceived(int32 argc, char **argv)
 }
 
 void BPMApplication::RefsReceived(BMessage *le_message)
-{	
-	uint32 type; 
-	int32 count; 
+{
+	uint32 type;
+	int32 count;
 	entry_ref ref;
-	BPath the_path; 
-	char txt[255];	
+	BPath the_path;
+	char txt[255];
 	BBitmap *tempbmp;
-	
-	le_message->GetInfo("refs", &type, &count); 
+
+	le_message->GetInfo("refs", &type, &count);
 	if(count>30) count=30;
 
 	ShowWait();
 	for ( long i = --count; i >= 0; i-- )
-	{	
-		le_message->FindRef("refs", i, &ref); 
+	{
+		le_message->FindRef("refs", i, &ref);
 		BEntry entry(&ref);
-		
+
 		entry.GetPath(&the_path);
 		sprintf(txt,the_path.Path());
 
@@ -91,12 +91,12 @@ void BPMApplication::RefsReceived(BMessage *le_message)
 				alert->Go();
 			}
 			else
-			{	
+			{
 				mainwin->OpenImage(txt,tempbmp);
 				delete tempbmp;
 			}
 		}
-	}					
+	}
 	CloseWait();
 }
 
@@ -110,15 +110,15 @@ BPath temppath;
 			filterwin_open=false;
 			mainwin->PostMessage(msg);
 			break;
-			
+
 		case SHOW_WAIT:
 			ShowWait();
 			break;
-			
+
 		case CLOSE_WAIT:
 			CloseWait();
 			break;
-		
+
 		case TRANSLATOR_SELECTED:
 		{	int32 code;
 			BString tempmime;
@@ -126,7 +126,7 @@ BPath temppath;
 				break;
 			if(msg->FindString("MIME",&tempmime)!=B_OK)
 				tempmime.SetTo("");
-				
+
 			if(mainwin->imgview->openimages>0)
 			{	mainwin->Lock();
 				mainwin->imgview->p_active_image->typecode=code;
@@ -217,5 +217,5 @@ BPath temppath;
 		default:
 			BApplication::MessageReceived(msg);
 	}
-	
+
 }

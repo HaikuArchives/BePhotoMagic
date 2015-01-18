@@ -52,8 +52,7 @@
 	#define BPM_SAVE_REF	'bsrf'
 #endif
 
-//class BPMApplication : public BApplication 
-class BPMApplication : public SpLocaleApp
+class BPMApplication : public BApplication
 {
 public:
 	BPMApplication(void);
@@ -62,7 +61,7 @@ public:
 	virtual void ArgvReceived(int32 argc, char **argv);
 	void MessageReceived(BMessage *msg);
 
-	// App-specific methods	
+	// App-specific methods
 	void Shortcuts(BMessage *msg);
 	void SetColor(bool fore=true, bool fromimage=false);
 	void UpdateBrush(void);
@@ -72,7 +71,7 @@ public:
 	void ShowWait(void);
 	void CloseWait(void);
 	void ShortcutToolbarUpdate(void);
-	
+
 	BPMWindow	*mainwin;
 	ToolWindow *toolwin;
 //	LayerWindow *layerwin;
@@ -84,7 +83,7 @@ public:
 	TextToolWindow *textwin;
 	BWindow *waitwin;
 	WaitView *waitview;
-	
+
 //	void LoadPrefs(void);
 //	void SavePrefs(void);
 //	yprefs prefs;

@@ -15,28 +15,28 @@
 
 #include "SpLocaleApp.h"
 
-class SlideTextView : public BView 
+class SlideTextView : public BView
 {
 public:
-	SlideTextView(BRect frame, long flags); 
+	SlideTextView(BRect frame, long flags);
 	virtual void Draw(BRect update_rect);
 	virtual void Pulse();
 	int32 max_posi;
 	int32 posi;
-	
+
 	char *text;
 };
 
 
 
-class AboutView : public BView 
+class AboutView : public BView
 {
 public:
 
-	AboutView(BRect frame, long flags); 
+	AboutView(BRect frame, long flags);
 	virtual	~AboutView();
 	virtual void Draw(BRect update_rect);
-	
+
 	virtual	void MouseDown(BPoint point);
 	BBitmap *title_pic;
 
@@ -44,7 +44,7 @@ public:
 	bool locked;
 };
 
-class AboutWindow : public BWindow 
+class AboutWindow : public BWindow
 {
 public:
 	AboutWindow(bool locked=false);
