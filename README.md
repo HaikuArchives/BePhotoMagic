@@ -5,5 +5,4 @@ BePhotoMagic is a resurrection of the abandoned Photon project and is intended t
 
 ![BePhotoMagic screenshot](Screenshot.png "BePhotoMagic")
 
-License: GNU General Public License version 2.0 (GPLv2)  
-Original Site: http://sourceforge.net/projects/bpmagic/
+License: GNU General Public License version 2.0 (GPLv2)
